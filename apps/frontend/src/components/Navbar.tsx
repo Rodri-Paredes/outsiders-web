@@ -18,7 +18,7 @@ export default function Navbar() {
         {/* Left */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-[#d4a574]">
           <Link href="/#products" className="hover:text-white transition-colors">shop</Link>
-          <Link href="/#products" className="hover:text-white transition-colors">drops</Link>
+          <Link href="/drops" className="hover:text-white transition-colors">drops</Link>
           <Link href="/#products" className="hover:text-white transition-colors">fits</Link>
         </nav>
 

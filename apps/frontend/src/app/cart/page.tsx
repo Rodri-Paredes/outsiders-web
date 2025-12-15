@@ -5,11 +5,6 @@ import CartView from './view';
 export default function CartPage() {
   return (
     <main className="bg-white min-h-screen text-black">
-      {/* Top bar */}
-      <div className="w-full text-xs font-medium text-[#d4a574] bg-[#1a3e3d] flex items-center justify-center h-10 px-6">
-        <span>🔥 envíos gratis en pedidos +100bs — devoluciones fáciles</span>
-      </div>
-
       <Navbar />
 
       <section className="py-16 px-6 max-w-[1200px] mx-auto">
