@@ -1,0 +1,35 @@
+import { ReactNode } from 'react'
+
+interface BadgeProps {
+  children: ReactNode
+  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+}
+
+export default function Badge({ 
+  children, 
+  variant = 'primary',
+  size = 'md',
+  className = '' 
+}: BadgeProps) {
+  const variants = {
+    primary: 'badge-primary',
+    success: 'badge-success',
+    warning: 'badge-warning',
+    danger: 'badge-danger',
+    info: 'badge-info',
+  }
+
+  const sizes = {
+    sm: 'text-xs px-2 py-0.5',
+    md: 'text-xs px-2.5 py-0.5',
+    lg: 'text-sm px-3 py-1',
+  }
+
+  return (
+    <span className={`badge ${variants[variant]} ${sizes[size]} ${className}`}>
+      {children}
+    </span>
+  )
+}
