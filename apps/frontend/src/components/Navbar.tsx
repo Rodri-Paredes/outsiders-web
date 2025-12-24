@@ -3,14 +3,27 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { useCart } from './CartProvider';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Navbar() {
   const { itemCount, refreshCart } = useCart();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     // Load cart once so the count shows up.
-    refreshCart();
-  }, [refreshCart]);
+    if (user) {
+      refreshCart();
+    }
+  }, [user, refreshCart]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      alert('Sesión cerrada');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#2d5f5d]/95 backdrop-blur-md border-b border-[#d4a574]/30">
@@ -37,13 +50,27 @@ export default function Navbar() {
           >
             buscar
           </button>
-          <button
-            type="button"
-            onClick={() => alert('Account: próximamente')}
-            className="text-sm font-medium text-[#d4a574] hover:text-white transition-colors cursor-pointer hidden md:block"
-          >
-            cuenta
-          </button>
+          {user ? (
+            <>
+              <span className="text-sm font-medium text-[#d4a574] hidden md:block">
+                {user.name || user.email}
+              </span>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="text-sm font-medium text-[#d4a574] hover:text-white transition-colors cursor-pointer hidden md:block"
+              >
+                salir
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/auth"
+              className="text-sm font-medium text-[#d4a574] hover:text-white transition-colors hidden md:block"
+            >
+              ingresar
+            </Link>
+          )}
           <Link
             href="/cart"
             className="text-sm font-medium text-[#d4a574] hover:text-white transition-colors flex items-center gap-1"

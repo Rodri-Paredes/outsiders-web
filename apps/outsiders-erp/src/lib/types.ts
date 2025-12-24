@@ -70,12 +70,10 @@ export interface Drop {
   id: string
   name: string
   description: string | null
-  launch_date: string
+  release_date: string
   end_date: string | null
   status: DropStatus
-  is_featured: boolean
   image_url: string | null
-  banner_url: string | null
   created_at: string
   updated_at: string
 }
@@ -247,7 +245,7 @@ export interface PaymentDetails {
   tarjeta?: number
 }
 
-export type DropStatus = 'ACTIVO' | 'INACTIVO' | 'FINALIZADO'
+export type DropStatus = 'PROXIMO' | 'ACTIVO' | 'FINALIZADO'
 
 export type CashRegisterStatus = 'ABIERTA' | 'CERRADA'
 

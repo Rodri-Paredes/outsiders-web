@@ -10,7 +10,7 @@ export const dropService = {
       let query = supabase
         .from('drops')
         .select('*')
-        .order('launch_date', { ascending: false });
+        .order('release_date', { ascending: false });
 
       if (filters?.status) {
         query = query.eq('status', filters.status);
@@ -83,12 +83,10 @@ export const dropService = {
   async createDrop(dropData: {
     name: string;
     description?: string;
-    launch_date: string;
+    release_date: string;
     end_date?: string;
     status?: DropStatus;
-    is_featured?: boolean;
     image_url?: string;
-    banner_url?: string;
   }) {
     try {
       const { data, error } = await supabase
@@ -96,8 +94,7 @@ export const dropService = {
         .insert([
           {
             ...dropData,
-            status: dropData.status || 'INACTIVO',
-            is_featured: dropData.is_featured || false,
+            status: dropData.status || 'PROXIMO',
           },
         ])
         .select()

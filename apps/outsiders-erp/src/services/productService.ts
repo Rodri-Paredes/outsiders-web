@@ -89,11 +89,15 @@ export const productService = {
     price: number;
     image_url?: string;
     drop_id?: string;
+    is_visible?: boolean;
   }) {
     try {
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([{
+          ...product,
+          is_visible: product.is_visible !== undefined ? product.is_visible : true,
+        }])
         .select()
         .single();
 

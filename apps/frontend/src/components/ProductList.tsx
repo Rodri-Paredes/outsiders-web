@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Product } from '../lib/types';
+import { Product } from '../lib/database.types';
 import { useCart } from './CartProvider';
+import { productsService } from '../services/products.service';
 
 export default function ProductList() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
   const { addToCart: addToCartInContext } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +35,7 @@ export default function ProductList() {
   ];
 
   useEffect(() => {
-    fetch(`${apiBaseUrl}/products`)
-      .then((res) => res.json())
+    productsService.getAll()
       .then((data) => {
         setProducts(data);
         setLoading(false);
@@ -45,7 +44,7 @@ export default function ProductList() {
         console.error('Failed to fetch products', err);
         setLoading(false);
       });
-  }, [apiBaseUrl]);
+  }, []);
 
   const addToCart = async (productId: string) => {
     try {
@@ -53,7 +52,7 @@ export default function ProductList() {
       alert('Product added to cart!');
     } catch (error) {
       console.error('Error adding to cart', error);
-      alert('Failed to add to cart');
+      alert('Failed to add to cart. Please sign in first.');
     }
   };
 
@@ -68,7 +67,7 @@ export default function ProductList() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {products.map((product, index) => {
         const imageIndex = index % unsplashImages.length;
-        const mainImage = unsplashImages[imageIndex];
+        const mainImage = product.image_url || unsplashImages[imageIndex];
         const hoverImage = unsplashImagesHover[imageIndex];
         const isHovered = hoveredProduct === product.id;
 

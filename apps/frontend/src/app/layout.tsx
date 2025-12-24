@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Space_Grotesk } from 'next/font/google'
+import { AuthProvider } from '../contexts/AuthContext'
 import { CartProvider } from '../components/CartProvider'
 
 const spaceGrotesk = Space_Grotesk({ 
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${spaceGrotesk.className} antialiased bg-white text-outsiders-1`}>
-        <CartProvider>{children}</CartProvider>
+        <AuthProvider>
+          <CartProvider>{children}</CartProvider>
+        </AuthProvider>
       </body>
     </html>
   )
