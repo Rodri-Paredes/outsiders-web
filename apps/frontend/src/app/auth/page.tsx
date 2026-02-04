@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-// Deshabilitar generación estática
-export const dynamic = 'force-dynamic';
+// Evitar SSR para esta página
+const AuthPageContent = dynamic(() => Promise.resolve(AuthPageInner), {
+  ssr: false,
+});
 
-export default function AuthPage() {
+function AuthPageInner() {
+  const { useAuth } = require('../../contexts/AuthContext');
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -133,4 +136,8 @@ export default function AuthPage() {
       </div>
     </div>
   );
+}
+
+export default function AuthPage() {
+  return <AuthPageContent />;
 }
