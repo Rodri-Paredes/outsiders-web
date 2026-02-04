@@ -9,6 +9,7 @@ const nextConfig = {
       },
     ],
   },
+  // Configuración limpia sin opciones experimentales
 };
 
 module.exports = nextConfig;
