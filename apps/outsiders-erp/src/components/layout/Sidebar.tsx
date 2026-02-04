@@ -3,7 +3,6 @@ import {
   LayoutDashboard, 
   ShoppingCart, 
   Package, 
-  Sparkles, 
   Database,
   Wallet,
   BarChart3,
