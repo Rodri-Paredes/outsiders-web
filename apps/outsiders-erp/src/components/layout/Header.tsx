@@ -42,7 +42,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* Center: Branch */}
         {activeBranch && (
           <div className="hidden md:flex items-center space-x-2 text-sm">
-            <MapPin className="h-4 w-4 text-accent" />
+            <MapPin className="h-4 w-4 text-gray-300" />
             <span className="font-medium">{activeBranch.name}</span>
           </div>
         )}
@@ -58,7 +58,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <p className="text-xs text-gray-300 capitalize">{user?.role}</p>
             </div>
             
-            <div className="bg-accent rounded-full p-2">
+            <div className="bg-white/20 rounded-full p-2">
               <User className="h-4 w-4" />
             </div>
             
@@ -105,7 +105,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       {/* Mobile Branch */}
       {activeBranch && (
         <div className="md:hidden px-4 pb-2 flex items-center space-x-2 text-xs border-t border-white/10 pt-2">
-          <MapPin className="h-3 w-3 text-accent" />
+          <MapPin className="h-3 w-3 text-gray-300" />
           <span>{activeBranch.name}</span>
         </div>
       )}

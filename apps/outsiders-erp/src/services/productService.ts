@@ -21,7 +21,8 @@ export const productService = {
       }
 
       if (filters?.search) {
-        query = query.ilike('name', `%${filters.search}%`);
+        // Buscar por nombre o SKU
+        query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
       }
 
       if (!filters?.includeHidden) {
@@ -34,6 +35,25 @@ export const productService = {
       return data as Product[];
     } catch (error) {
       console.error('Error fetching products:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Buscar producto por SKU
+   */
+  async getProductBySKU(sku: string) {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('sku', sku)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+      return data as Product | null;
+    } catch (error) {
+      console.error('Error fetching product by SKU:', error);
       throw error;
     }
   },
@@ -88,6 +108,7 @@ export const productService = {
     category: string;
     price: number;
     image_url?: string;
+    images?: string[];
     drop_id?: string;
   }) {
     try {
@@ -185,6 +206,19 @@ export const productService = {
       return data.publicUrl;
     } catch (error) {
       console.error('Error uploading product image:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Subir múltiples imágenes de producto
+   */
+  async uploadProductImages(files: File[]): Promise<string[]> {
+    try {
+      const uploadPromises = files.map(file => this.uploadProductImage(file));
+      return await Promise.all(uploadPromises);
+    } catch (error) {
+      console.error('Error uploading product images:', error);
       throw error;
     }
   },

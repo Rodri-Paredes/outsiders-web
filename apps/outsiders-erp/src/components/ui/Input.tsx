@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, ReactNode } from 'react'
+import { forwardRef, InputHTMLAttributes, ReactNode } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -6,13 +6,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: ReactNode
 }
 
-export default function Input({
+const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   icon,
   className = '',
   ...props
-}: InputProps) {
+}, ref) => {
   return (
     <div className="w-full">
       {label && (
@@ -30,6 +30,7 @@ export default function Input({
         )}
         
         <input
+          ref={ref}
           className={`
             input
             ${icon ? 'pl-10' : ''}
@@ -45,4 +46,8 @@ export default function Input({
       )}
     </div>
   )
-}
+});
+
+Input.displayName = 'Input';
+
+export default Input;

@@ -19,7 +19,7 @@ const navigation = [
   { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
   { name: 'Ventas', to: '/sales', icon: ShoppingCart },
   { name: 'Productos', to: '/products', icon: Package },
-  { name: 'Drops', to: '/drops', icon: Sparkles },
+  // { name: 'Drops', to: '/drops', icon: Sparkles },
   { name: 'Stock', to: '/stock', icon: Database },
   { name: 'Caja', to: '/cash', icon: Wallet },
   { name: 'Reportes', to: '/reports', icon: BarChart3 },
@@ -39,7 +39,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 z-30
+          fixed lg:sticky top-0 lg:top-0 left-0 h-screen lg:h-[calc(100vh-64px)] bg-white border-r border-gray-200 z-30
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           w-64
@@ -66,7 +66,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-accent text-white shadow-md'
+                    ? 'bg-gray-800 text-white shadow-md'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`
               }

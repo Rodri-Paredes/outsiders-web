@@ -119,7 +119,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               ¿Olvidaste tu contraseña?{' '}
-              <button className="text-accent hover:text-accent-600 font-medium">
+              <button className="text-gray-700 hover:text-gray-900 font-medium">
                 Recuperar
               </button>
             </p>

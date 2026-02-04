@@ -9,7 +9,17 @@ Sistema de gestión empresarial (ERP) completo para tienda de ropa, desarrollado
 
 ---
 
-## 📋 Características Principales
+## � Documentación
+
+Toda la documentación técnica y de proceso está organizada en la carpeta **[`docs/`](./docs/)**:
+
+- 🚀 **[Inicio Rápido](./docs/QUICK_START.md)** - Comienza aquí
+- ⚙️ **[Guía de Configuración](./docs/SETUP_GUIDE.md)** - Instalación y setup
+- 📖 **[Índice Completo](./docs/README.md)** - Toda la documentación
+
+---
+
+## �📋 Características Principales
 
 ### ✅ Gestión Completa
 - 🔐 **Autenticación** - Login seguro con Supabase Auth

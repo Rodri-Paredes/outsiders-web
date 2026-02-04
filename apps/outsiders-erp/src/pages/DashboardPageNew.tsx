@@ -37,7 +37,7 @@ export function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
       </div>
     )
   }
@@ -92,8 +92,8 @@ export function DashboardPage() {
               <p className="text-sm text-gray-600">Productos Vendidos</p>
               <p className="text-2xl font-bold mt-1">0</p>
             </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <Package size={24} className="text-orange-600" />
+            <div className="p-3 bg-gray-100 rounded-lg">
+              <Package size={24} className="text-gray-700" />
             </div>
           </div>
         </div>

@@ -36,8 +36,8 @@ export default function ReportsPage() {
     try {
       setLoading(true);
       const [statsData, salesReport] = await Promise.all([
-        reportService.getDashboardStats(activeBranch.id, dateRange.startDate, dateRange.endDate),
-        reportService.getSalesReport(activeBranch.id, dateRange.startDate, dateRange.endDate)
+        reportService.getDashboardStats(activeBranch.id, dateRange.startDate!, dateRange.endDate!),
+        reportService.getSalesReport(activeBranch.id, dateRange.startDate!, dateRange.endDate!)
       ]);
 
       setStats(statsData);
@@ -101,26 +101,27 @@ export default function ReportsPage() {
           </p>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar size={20} className="text-gray-500" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <Calendar size={20} className="text-gray-500 hidden sm:block" />
             <input
               type="date"
               value={dateRange.startDate}
               onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
             />
-            <span className="text-gray-500">-</span>
+            <span className="text-gray-500 text-center sm:inline">-</span>
             <input
               type="date"
               value={dateRange.endDate}
               onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto"
             />
           </div>
           
-          <Button onClick={exportToCSV} icon={<Download size={20} />}>
-            Exportar CSV
+          <Button onClick={exportToCSV} icon={<Download size={20} />} className="w-full sm:w-auto">
+            <span className="hidden sm:inline">Exportar CSV</span>
+            <span className="sm:hidden">Exportar</span>
           </Button>
         </div>
       </div>
@@ -178,8 +179,8 @@ export default function ReportsPage() {
                   {stats.total_products_sold || 0}
                 </p>
               </div>
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <Package size={24} className="text-orange-600" />
+              <div className="p-3 bg-gray-100 rounded-lg">
+                <Package size={24} className="text-gray-700" />
               </div>
             </div>
           </Card>
@@ -193,7 +194,7 @@ export default function ReportsPage() {
           
           {loading ? (
             <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800 mx-auto"></div>
               <p className="text-gray-600 mt-4">Cargando reportes...</p>
             </div>
           ) : salesData.length === 0 ? (

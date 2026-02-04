@@ -45,7 +45,7 @@ export default function BranchSelectionPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-accent animate-spin mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 text-gray-800 animate-spin mx-auto mb-4" />
           <p className="text-white text-lg">Cargando sucursales...</p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export default function BranchSelectionPage() {
             Selecciona una Sucursal
           </h1>
           <p className="text-gray-400">
-            Hola, <span className="text-accent font-semibold">{user?.name}</span>
+            Hola, <span className="text-gray-900 font-semibold">{user?.name}</span>
           </p>
         </div>
 
@@ -85,19 +85,19 @@ export default function BranchSelectionPage() {
                 disabled={selectedBranch === branch.id}
                 className={`
                   bg-white rounded-xl p-6 text-left transition-all duration-200
-                  hover:shadow-accent hover:scale-105 active:scale-95
-                  ${selectedBranch === branch.id ? 'ring-4 ring-accent shadow-accent' : 'shadow-lg'}
+                  hover:shadow-lg hover:scale-105 active:scale-95
+                  ${selectedBranch === branch.id ? 'ring-4 ring-gray-800 shadow-lg' : 'shadow-lg'}
                   disabled:cursor-not-allowed
                 `}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="bg-accent/10 rounded-lg p-3">
-                    <MapPin className="h-6 w-6 text-accent" />
+                  <div className="bg-gray-100 rounded-lg p-3">
+                    <MapPin className="h-6 w-6 text-gray-800" />
                   </div>
                   {selectedBranch === branch.id ? (
-                    <Loader2 className="h-5 w-5 text-accent animate-spin" />
+                    <Loader2 className="h-5 w-5 text-gray-800 animate-spin" />
                   ) : (
-                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-accent transition-colors" />
+                    <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-gray-800 transition-colors" />
                   )}
                 </div>
 

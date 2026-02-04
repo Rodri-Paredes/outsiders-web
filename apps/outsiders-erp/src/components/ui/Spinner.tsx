@@ -3,7 +3,7 @@ interface SpinnerProps {
   color?: string
 }
 
-export default function Spinner({ size = 'md', color = 'text-accent' }: SpinnerProps) {
+export default function Spinner({ size = 'md', color = 'text-gray-800' }: SpinnerProps) {
   const sizes = {
     sm: 'h-4 w-4',
     md: 'h-8 w-8',

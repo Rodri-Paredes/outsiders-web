@@ -65,7 +65,7 @@ function App() {
     <BrowserRouter>
       <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
         </div>
       }>
         <Routes>
@@ -118,7 +118,7 @@ function App() {
           },
           success: {
             iconTheme: {
-              primary: '#FF6B35',
+              primary: '#1f2937',
               secondary: '#fff',
             },
           },

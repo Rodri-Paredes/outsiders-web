@@ -30,10 +30,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     description: product?.description || '',
     category: product?.category || '',
     price: product?.price || 0,
+    sku: (product as any)?.sku || '',
   });
 
-  const [mainImage, setMainImage] = useState<string>(product?.image_url || '');
-  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [sizesWithStock, setSizesWithStock] = useState<SizeWithStock[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -84,30 +85,43 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith('image/')) {
-      Toast.error('Por favor selecciona una imagen válida');
+    // Validar tipo y tamaño de archivos
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        Toast.error('Por favor selecciona solo imágenes válidas');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        Toast.error('Las imágenes no deben superar 5MB cada una');
+        return;
+      }
+    }
+
+    // Limitar a 5 imágenes máximo
+    if (images.length + files.length > 5) {
+      Toast.error('Máximo 5 imágenes por producto');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      Toast.error('La imagen no debe superar 5MB');
-      return;
-    }
+    setImageFiles(prev => [...prev, ...files]);
 
-    setMainImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMainImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // Crear previews
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImages(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const removeImage = () => {
-    setMainImage('');
-    setMainImageFile(null);
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const addSize = (size: string) => {
@@ -170,21 +184,27 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     try {
       setLoading(true);
 
-      let imageUrl = mainImage;
+      let imageUrls: string[] = [];
 
-      // Subir imagen si hay una nueva
-      if (mainImageFile) {
+      // Subir nuevas imágenes si existen
+      if (imageFiles.length > 0) {
         try {
-          imageUrl = await productService.uploadProductImage(mainImageFile);
+          const uploadedUrls = await productService.uploadProductImages(imageFiles);
+          imageUrls = [...images.filter(img => img.startsWith('http')), ...uploadedUrls];
         } catch (error) {
-          console.error('Error uploading image:', error);
-          // Continuar sin imagen si falla la subida
+          console.error('Error uploading images:', error);
+          Toast.error('Error al subir algunas imágenes');
+          // Continuar con las imágenes existentes
+          imageUrls = images.filter(img => img.startsWith('http'));
         }
+      } else {
+        imageUrls = images;
       }
 
       const productData = {
         ...formData,
-        image_url: imageUrl || null,
+        images: imageUrls.length > 0 ? imageUrls : null,
+        image_url: imageUrls[0] || null, // Mantener compatibilidad
         is_visible: true,
       };
 
@@ -197,7 +217,6 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         // Gestionar variantes
         const existingVariants = await productService.getProductVariants(product.id);
         const existingSizes = existingVariants.map(v => v.size);
-        const newSizes = sizesWithStock.map(s => s.size);
 
         // Crear nuevas variantes y actualizar stock
         for (const sizeData of sizesWithStock) {
@@ -224,6 +243,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         // Crear nuevo producto
         const createData = {
           ...productData,
+          images: productData.images || undefined,
           image_url: productData.image_url || undefined
         };
         savedProduct = await productService.createProduct(createData);
@@ -257,11 +277,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const availableSizes = SIZES.filter(size => !sizesWithStock.some(s => s.size === size));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b bg-white rounded-t-lg">
-          <h2 className="text-2xl font-bold text-gray-900">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+        {/* Header - Fijo */}
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b bg-white rounded-t-lg flex-shrink-0">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
           <button
@@ -273,9 +293,10 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Form - Scrolleable */}
+        <form id="product-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Columna Izquierda - Información Básica */}
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Información del Producto</h3>
@@ -288,6 +309,15 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 error={errors.name}
                 placeholder="Ej: Remera Oversized Black"
                 required
+              />
+
+              <Input
+                label="SKU / Código de Barras"
+                name="sku"
+                value={formData.sku}
+                onChange={handleInputChange}
+                error={errors.sku}
+                placeholder="Ej: OUT-REM-001"
               />
 
               <div>
@@ -327,42 +357,74 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 required
               />
 
-              {/* Imagen */}
+              {/* Imágenes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Imagen del Producto
+                  Imágenes del Producto (máx. 5)
                 </label>
                 
-                {mainImage ? (
-                  <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden group">
-                    <img
-                      src={mainImage}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                {images.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-32 border-2 border-gray-300 border-dashed rounded-lg">
+                    <ImageIcon className="w-10 h-10 mb-2 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-700 mb-1">No hay imágenes</p>
+                    <label className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer font-medium">
+                      Click para subir imágenes
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                      />
+                    </label>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col items-center justify-center">
-                      <ImageIcon className="w-12 h-12 mb-3 text-gray-400" />
-                      <p className="text-sm font-medium text-gray-700">Click para subir imagen</p>
-                      <p className="text-xs text-gray-500 mt-1">PNG, JPG o WEBP (máx. 5MB)</p>
+                  <div className="space-y-3">
+                    {/* Grid de imágenes - Más compacto */}
+                    <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-2">
+                      {images.map((image, index) => (
+                        <div key={index} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group">
+                          <img
+                            src={image}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                          {index === 0 && (
+                            <div className="absolute bottom-1 left-1 px-2 py-0.5 bg-black text-white text-xs rounded">
+                              Principal
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {/* Botón para agregar más imágenes */}
+                      {images.length < 5 && (
+                        <label className="flex flex-col items-center justify-center aspect-square border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                          <ImageIcon className="w-6 h-6 mb-1 text-gray-400" />
+                          <p className="text-xs font-medium text-gray-700 text-center px-1">Agregar</p>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageChange}
+                          />
+                        </label>
+                      )}
                     </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
+                  </div>
                 )}
+
+                <p className="text-xs text-gray-500 mt-2">
+                  La primera imagen será la imagen principal del producto
+                </p>
               </div>
             </div>
 
@@ -372,7 +434,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Tallas y Stock</h3>
                 
                 {/* Tallas Agregadas */}
-                <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto pr-2">
                   {sizesWithStock.map((sizeData) => (
                     <div key={sizeData.size} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="flex-shrink-0">
@@ -466,26 +528,28 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
               </div>
             </div>
           </div>
-
-          {/* Botones */}
-          <div className="flex gap-3 justify-end pt-6 mt-6 border-t">
-            <Button 
-              type="button" 
-              variant="secondary" 
-              onClick={onClose} 
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              loading={loading}
-              disabled={loading}
-            >
-              {product ? 'Guardar Cambios' : 'Crear Producto'}
-            </Button>
           </div>
         </form>
+
+        {/* Botones - Fijos al fondo */}
+        <div className="flex gap-3 justify-end p-4 sm:p-6 border-t bg-white flex-shrink-0">
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onClose} 
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            type="submit" 
+            form="product-form"
+            loading={loading}
+            disabled={loading}
+          >
+            {product ? 'Guardar Cambios' : 'Crear Producto'}
+          </Button>
+        </div>
       </div>
     </div>
   );

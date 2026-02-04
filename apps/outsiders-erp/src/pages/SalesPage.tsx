@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, Barcode } from 'lucide-react';
 import { Product } from '../lib/types';
 import { productService } from '../services/productService';
 import { CATEGORIES } from '../lib/constants';
@@ -19,6 +19,8 @@ export function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [barcodeMode, setBarcodeMode] = useState(false);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showSizeModal, setShowSizeModal] = useState(false);
@@ -31,6 +33,12 @@ export function SalesPage() {
   useEffect(() => {
     loadProducts();
   }, [search, category]);
+
+  useEffect(() => {
+    if (barcodeMode && barcodeInputRef.current) {
+      barcodeInputRef.current.focus();
+    }
+  }, [barcodeMode]);
 
   const loadProducts = async () => {
     try {
@@ -46,6 +54,31 @@ export function SalesPage() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBarcodeSearch = async (sku: string) => {
+    if (!sku.trim()) return;
+
+    try {
+      const product = await productService.getProductBySKU(sku.trim());
+      
+      if (product) {
+        setSelectedProduct(product);
+        setShowSizeModal(true);
+        setSearch(''); // Limpiar búsqueda
+      } else {
+        Toast.error(`No se encontró producto con SKU: ${sku}`);
+      }
+    } catch (error) {
+      console.error('Error searching by barcode:', error);
+      Toast.error('Error al buscar por código de barras');
+    }
+  };
+
+  const handleBarcodeKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleBarcodeSearch(search);
     }
   };
 
@@ -81,12 +114,27 @@ export function SalesPage() {
 
           {/* Filtros */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              placeholder="Buscar productos..."
-              value={search}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
-              icon={<Search size={20} />}
-            />
+            <div className="relative">
+              <Input
+                ref={barcodeInputRef}
+                placeholder={barcodeMode ? "Escanea o escribe el código de barras..." : "Buscar productos..."}
+                value={search}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
+                onKeyPress={barcodeMode ? handleBarcodeKeyPress : undefined}
+                icon={barcodeMode ? <Barcode size={20} /> : <Search size={20} />}
+              />
+              <button
+                onClick={() => setBarcodeMode(!barcodeMode)}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-colors ${
+                  barcodeMode 
+                    ? 'bg-black text-white' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={barcodeMode ? 'Modo búsqueda normal' : 'Modo escáner de código de barras'}
+              >
+                <Barcode size={18} />
+              </button>
+            </div>
 
             <Select
               options={categoryOptions}
@@ -94,10 +142,19 @@ export function SalesPage() {
               onChange={(e) => setCategory(e.target.value)}
             />
           </div>
+
+          {barcodeMode && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800">
+                <Barcode size={16} className="inline mr-1" />
+                <strong>Modo escáner activado:</strong> Escanea el código de barras o escríbelo y presiona Enter
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Grid de productos */}
-        <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow p-4">
+        <div className="flex-1 overflow-y-auto bg-white rounded-lg shadow p-2 sm:p-4">
           {loading ? (
             <div className="text-center py-8">Cargando...</div>
           ) : products.length === 0 ? (
@@ -107,7 +164,7 @@ export function SalesPage() {
               description="Intenta ajustar los filtros de búsqueda"
             />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-4">
               {products.map((product) => (
                 <button
                   key={product.id}

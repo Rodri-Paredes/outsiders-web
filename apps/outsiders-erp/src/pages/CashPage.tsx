@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wallet, DollarSign, CreditCard, Smartphone, TrendingUp } from 'lucide-react';
+import { Wallet, DollarSign, CreditCard, Smartphone, TrendingUp, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import { cashService } from '../services/cashService';
 import { useAuthStore } from '../store/authStore';
 import { CashRegister } from '../lib/types';
@@ -8,6 +8,8 @@ import Card from '../components/ui/Card';
 import Toast from '../components/ui/Toast';
 import { OpenCashModal } from '../components/cash/OpenCashModal';
 import { CloseCashModal } from '../components/cash/CloseCashModal';
+import { CashWithdrawalModal } from '../components/cash/CashWithdrawalModal';
+import { CashDepositModal } from '../components/cash/CashDepositModal';
 
 export function CashPage() {
   const [cashRegister, setCashRegister] = useState<CashRegister | null>(null);
@@ -15,6 +17,8 @@ export function CashPage() {
   const [loading, setLoading] = useState(true);
   const [showOpenModal, setShowOpenModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
   const { activeBranch } = useAuthStore();
 
@@ -85,9 +89,25 @@ export function CashPage() {
             Abierta el {new Date(cashRegister.opening_date).toLocaleString('es-BO')}
           </p>
         </div>
-        <Button variant="danger" onClick={() => setShowCloseModal(true)}>
-          Cerrar Caja
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowDepositModal(true)}
+            icon={<ArrowUpCircle size={18} />}
+          >
+            Ingreso
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowWithdrawalModal(true)}
+            icon={<ArrowDownCircle size={18} />}
+          >
+            Retiro
+          </Button>
+          <Button variant="danger" onClick={() => setShowCloseModal(true)}>
+            Cerrar Caja
+          </Button>
+        </div>
       </div>
 
       {/* Resumen */}
@@ -130,8 +150,8 @@ export function CashPage() {
 
         <Card className="p-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <TrendingUp size={24} className="text-orange-600" />
+            <div className="p-3 bg-gray-100 rounded-lg">
+              <TrendingUp size={24} className="text-gray-700" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total</p>
@@ -156,6 +176,22 @@ export function CashPage() {
           cashRegister={cashRegister}
           summary={summary}
           onClose={() => setShowCloseModal(false)}
+          onSuccess={loadCashRegister}
+        />
+      )}
+
+      {showWithdrawalModal && cashRegister && (
+        <CashWithdrawalModal
+          cashRegisterId={cashRegister.id}
+          onClose={() => setShowWithdrawalModal(false)}
+          onSuccess={loadCashRegister}
+        />
+      )}
+
+      {showDepositModal && cashRegister && (
+        <CashDepositModal
+          cashRegisterId={cashRegister.id}
+          onClose={() => setShowDepositModal(false)}
           onSuccess={loadCashRegister}
         />
       )}

@@ -17,14 +17,11 @@ export type Category = (typeof CATEGORIES)[number]
 // ==================== PRODUCT SIZES ====================
 
 export const SIZES = [
-  'XS',
   'S',
   'M',
   'L',
   'XL',
-  'XXL',
-  'XXXL',
-  'Única',
+  'TALLA UNICA',
 ] as const
 
 export type Size = (typeof SIZES)[number]

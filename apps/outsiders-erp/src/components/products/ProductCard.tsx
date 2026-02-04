@@ -1,6 +1,7 @@
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product } from '../../lib/types';
 import Badge from '../ui/Badge';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +16,8 @@ export function ProductCard({
   onDelete,
   onToggleVisibility,
 }: ProductCardProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-BO', {
       style: 'currency',
@@ -22,16 +25,66 @@ export function ProductCard({
     }).format(price);
   };
 
+  const images = product.images || (product.image_url ? [product.image_url] : []);
+
+  const nextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden group">
-      {/* Imagen */}
+      {/* Imagen con carrusel */}
       <div className="relative aspect-square bg-gray-100 overflow-hidden">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+        {images.length > 0 ? (
+          <>
+            <img
+              src={images[currentImageIndex]}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            
+            {/* Controles de carrusel */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <ChevronRight size={20} />
+                </button>
+                
+                {/* Indicadores */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        index === currentImageIndex 
+                          ? 'bg-white w-4' 
+                          : 'bg-white/50 hover:bg-white/75'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">

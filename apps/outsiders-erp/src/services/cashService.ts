@@ -321,4 +321,26 @@ export const cashService = {
       throw error;
     }
   },
+
+  /**
+   * Obtener usuario actual autenticado
+   */
+  async getCurrentUser() {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) throw new Error('Usuario no autenticado');
+      
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (userError) throw userError;
+      return userData;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      throw error;
+    }
+  },
 };

@@ -14,16 +14,18 @@ import { useAuthStore } from '../store/authStore';
 import Card from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import Toast from '../components/ui/Toast';
-import Badge from '../components/ui/Badge';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [paymentStats, setPaymentStats] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+  const [dateRange, setDateRange] = useState<{
+    startDate: string;
+    endDate: string;
+  }>({
+    startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0] || '',
+    endDate: new Date().toISOString().split('T')[0] || '',
   });
 
   const { activeBranch } = useAuthStore();
@@ -35,15 +37,19 @@ export default function DashboardPage() {
   }, [activeBranch, dateRange]);
 
   const loadDashboardData = async () => {
-    if (!activeBranch) return;
+    if (!activeBranch?.id) return;
 
     try {
       setLoading(true);
 
+      const branchId = activeBranch.id!;
+      const startDate = dateRange.startDate;
+      const endDate = dateRange.endDate;
+      
       const [statsData, paymentsData, productsData] = await Promise.all([
-        reportService.getDashboardStats(activeBranch.id, dateRange.startDate, dateRange.endDate),
-        reportService.getSalesByPaymentMethod(activeBranch.id, dateRange.startDate, dateRange.endDate),
-        reportService.getTopProducts(activeBranch.id, dateRange.startDate, dateRange.endDate, 5),
+        reportService.getDashboardStats(branchId, startDate, endDate),
+        reportService.getSalesByPaymentMethod(branchId, startDate, endDate),
+        reportService.getTopProducts(branchId, startDate, endDate, 5),
       ]);
 
       console.log('Dashboard Data:', { statsData, paymentsData, productsData });
@@ -93,8 +99,8 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">
             Sucursal: <span className="font-semibold">{activeBranch?.name}</span>
           </p>
         </div>
@@ -171,8 +177,8 @@ export default function DashboardPage() {
                 {stats?.total_products_sold || 0}
               </p>
             </div>
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <Package size={24} className="text-orange-600" />
+            <div className="p-3 bg-gray-100 rounded-lg">
+              <Package size={24} className="text-gray-700" />
             </div>
           </div>
         </Card>

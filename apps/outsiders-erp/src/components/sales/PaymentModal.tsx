@@ -89,11 +89,11 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[95vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold">Pagar</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white z-10">
+          <h2 className="text-lg sm:text-xl font-bold">Pagar</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -103,16 +103,16 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Total */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="text-sm text-gray-600">Total a pagar</div>
-            <div className="text-3xl font-bold">Bs {total.toFixed(2)}</div>
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+            <div className="text-xs sm:text-sm text-gray-600">Total a pagar</div>
+            <div className="text-2xl sm:text-3xl font-bold">Bs {total.toFixed(2)}</div>
           </div>
 
           {/* Tipo de pago */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               Método de Pago
             </label>
             <div className="grid grid-cols-2 gap-2">
