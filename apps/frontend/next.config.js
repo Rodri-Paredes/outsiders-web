@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -9,9 +8,6 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-  },
-  experimental: {
-    missingSuspenseWithCSRBailout: false,
   },
 };
 
