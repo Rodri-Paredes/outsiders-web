@@ -10,6 +10,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://outsiders-web.vercel.app'),
   title: 'OUTSIDERS - Urban Streetwear',
   description: 'Ropa urbana para los que se atreven a ser diferentes. Diseños únicos y drops exclusivos.',
   keywords: ['streetwear', 'ropa urbana', 'fashion', 'outsiders', 'drops', 'bolivia'],
