@@ -41,6 +41,17 @@
     @apply block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-gray-800 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed transition-colors;
   }
 
+  /* Ocultar flechas de inputs tipo number */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
   .card {
     @apply bg-white rounded-lg shadow-soft p-6;
   }

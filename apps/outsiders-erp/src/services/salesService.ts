@@ -21,6 +21,7 @@ export const salesService = {
     total: number;
     payment_type: PaymentType;
     payment_details?: PaymentDetails;
+    customer_phone?: string;
   }) {
     try {
       // Usar la función transaccional que valida todo y ejecuta los triggers automáticamente
@@ -30,6 +31,7 @@ export const salesService = {
         p_discount_amount: saleData.discount_amount,
         p_payment_type: saleData.payment_type,
         p_payment_details: saleData.payment_details || null,
+        p_customer_phone: saleData.customer_phone || null,
       });
 
       if (error) throw error;
@@ -75,6 +77,7 @@ export const salesService = {
     total: number;
     payment_type: PaymentType;
     payment_details?: PaymentDetails;
+    customer_phone?: string;
   }) {
     try {
       // Crear la venta
@@ -89,6 +92,7 @@ export const salesService = {
             total: saleData.total,
             payment_type: saleData.payment_type,
             payment_details: saleData.payment_details,
+            customer_phone: saleData.customer_phone,
           },
         ])
         .select()

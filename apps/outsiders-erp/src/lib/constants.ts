@@ -17,6 +17,7 @@ export type Category = (typeof CATEGORIES)[number]
 // ==================== PRODUCT SIZES ====================
 
 export const SIZES = [
+  'XS',
   'S',
   'M',
   'L',
@@ -33,6 +34,7 @@ export const PAYMENT_TYPES: PaymentType[] = [
   'QR',
   'TARJETA',
   'MIXTO',
+  'REGALO',
 ]
 
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
@@ -40,6 +42,7 @@ export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
   QR: 'QR',
   TARJETA: 'Tarjeta',
   MIXTO: 'Mixto',
+  REGALO: 'Regalo',
 }
 
 // ==================== USER ROLES ====================

@@ -345,7 +345,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
               />
 
               <Input
-                label="Precio (Bs)"
+                label="Precio"
                 name="price"
                 type="number"
                 step="0.01"
@@ -353,7 +353,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 value={formData.price}
                 onChange={handleInputChange}
                 error={errors.price}
-                placeholder="0.00"
+                placeholder="Monto en bolivianos"
                 required
               />
 
@@ -460,8 +460,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                           <input
                             type="number"
                             min="0"
-                            value={sizeData.stock}
-                            onChange={(e) => updateSizeStock(sizeData.size, parseInt(e.target.value) || 0)}
+                            value={sizeData.stock || ''}
+                            onChange={(e) => updateSizeStock(sizeData.size, e.target.value === '' ? 0 : parseInt(e.target.value))}
                             className="w-20 px-3 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                           />
                           

@@ -54,6 +54,7 @@ export interface Sale {
   total: number
   payment_type: PaymentType
   payment_details: PaymentDetails | null
+  customer_phone: string | null
   sale_date: string
   created_at: string
 }
@@ -143,6 +144,7 @@ export interface SaleFormData {
   discount_amount: number
   payment_type: PaymentType
   payment_details?: PaymentDetails
+  customer_phone?: string
 }
 
 export interface SaleItemFormData {
@@ -240,7 +242,7 @@ export interface CashMovementWithDetails extends CashMovement {
 
 // ==================== PAYMENT TYPES ====================
 
-export type PaymentType = 'EFECTIVO' | 'QR' | 'TARJETA' | 'MIXTO'
+export type PaymentType = 'EFECTIVO' | 'QR' | 'TARJETA' | 'MIXTO' | 'REGALO'
 
 export interface PaymentDetails {
   efectivo?: number

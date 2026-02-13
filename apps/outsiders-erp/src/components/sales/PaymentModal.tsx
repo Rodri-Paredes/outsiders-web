@@ -15,7 +15,8 @@ interface PaymentModalProps {
 
 export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
   const [paymentType, setPaymentType] = useState<PaymentType>('EFECTIVO');
-  const [cashReceived, setCashReceived] = useState(0);
+  const [cashReceived, setCashReceived] = useState<number | ''>('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [mixedPayment, setMixedPayment] = useState<PaymentDetails>({
     efectivo: 0,
     qr: 0,
@@ -28,7 +29,8 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
 
   const calculateChange = () => {
     if (paymentType === 'EFECTIVO') {
-      return Math.max(0, cashReceived - total);
+      const received = typeof cashReceived === 'number' ? cashReceived : 0;
+      return Math.max(0, received - total);
     }
     return 0;
   };
@@ -40,13 +42,19 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
 
   const handleSubmit = async () => {
     // Validaciones
-    if (paymentType === 'EFECTIVO' && cashReceived < total) {
+    const received = typeof cashReceived === 'number' ? cashReceived : 0;
+    if (paymentType === 'EFECTIVO' && received < total) {
       Toast.error('El monto recibido es insuficiente');
       return;
     }
 
     if (paymentType === 'MIXTO' && !validateMixedPayment()) {
       Toast.error('Los montos del pago mixto no suman el total');
+      return;
+    }
+
+    if (paymentType === 'REGALO' && items.length === 0) {
+      Toast.error('No hay productos en el carrito');
       return;
     }
 
@@ -67,11 +75,12 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
           quantity: item.quantity,
           unit_price: item.price,
         })),
-        subtotal,
-        discount_amount: discount,
-        total,
+        subtotal: paymentType === 'REGALO' ? 0 : subtotal,
+        discount_amount: paymentType === 'REGALO' ? 0 : discount,
+        total: paymentType === 'REGALO' ? 0 : total,
         payment_type: paymentType,
         payment_details: paymentType === 'MIXTO' ? mixedPayment : undefined,
+        customer_phone: customerPhone.trim() || undefined,
       };
 
       // Crear la venta
@@ -110,13 +119,23 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
             <div className="text-2xl sm:text-3xl font-bold">Bs {total.toFixed(2)}</div>
           </div>
 
+          {/* Celular del Cliente */}
+          <Input
+            label="Celular del Cliente (opcional)"
+            type="tel"
+            placeholder="Ej: 76543210"
+            value={customerPhone}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)}
+            maxLength={15}
+          />
+
           {/* Tipo de pago */}
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               Método de Pago
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {(['EFECTIVO', 'QR', 'TARJETA', 'MIXTO'] as PaymentType[]).map((type) => (
+              {(['EFECTIVO', 'QR', 'TARJETA', 'MIXTO', 'REGALO'] as PaymentType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => setPaymentType(type)}
@@ -141,11 +160,11 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 step="0.01"
                 min="0"
                 value={cashReceived}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCashReceived(parseFloat(e.target.value) || 0)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCashReceived(e.target.value === '' ? '' : parseFloat(e.target.value))}
                 autoFocus
               />
 
-              {cashReceived >= total && (
+              {(typeof cashReceived === 'number' && cashReceived >= total) && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-700">Cambio</div>
                   <div className="text-2xl font-bold text-green-700">
@@ -163,11 +182,11 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 type="number"
                 step="0.01"
                 min="0"
-                value={mixedPayment.efectivo}
+                value={mixedPayment.efectivo || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setMixedPayment((prev) => ({
                     ...prev,
-                    efectivo: parseFloat(e.target.value) || 0,
+                    efectivo: e.target.value === '' ? 0 : parseFloat(e.target.value),
                   }))
                 }
               />
@@ -177,11 +196,11 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 type="number"
                 step="0.01"
                 min="0"
-                value={mixedPayment.qr}
+                value={mixedPayment.qr || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setMixedPayment((prev) => ({
                     ...prev,
-                    qr: parseFloat(e.target.value) || 0,
+                    qr: e.target.value === '' ? 0 : parseFloat(e.target.value),
                   }))
                 }
               />
@@ -191,11 +210,11 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 type="number"
                 step="0.01"
                 min="0"
-                value={mixedPayment.tarjeta}
+                value={mixedPayment.tarjeta || ''}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   setMixedPayment((prev) => ({
                     ...prev,
-                    tarjeta: parseFloat(e.target.value) || 0,
+                    tarjeta: e.target.value === '' ? 0 : parseFloat(e.target.value),
                   }))
                 }
               />
@@ -209,13 +228,26 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
             </div>
           )}
 
+          {paymentType === 'REGALO' && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">🎁</span>
+                <div className="text-sm font-semibold text-purple-700">Modo Regalo</div>
+              </div>
+              <p className="text-xs text-purple-600">
+                Esta venta se registrará sin costo (Bs 0.00) pero descontará el stock normalmente.
+                Ideal para obsequios, promociones o muestras gratuitas.
+              </p>
+            </div>
+          )}
+
           {/* Botones */}
           <div className="flex gap-3 pt-4 border-t">
             <Button variant="secondary" onClick={onClose} disabled={loading} className="flex-1">
               Cancelar
             </Button>
             <Button onClick={handleSubmit} loading={loading} className="flex-1">
-              Confirmar Venta
+              {paymentType === 'REGALO' ? 'Confirmar Regalo' : 'Confirmar Venta'}
             </Button>
           </div>
         </div>
