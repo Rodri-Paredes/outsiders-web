@@ -56,21 +56,79 @@ export default function ReportsPage() {
       return;
     }
 
-    const headers = ['Fecha', 'Total', 'Método de Pago', 'Productos', 'Usuario'];
-    const rows = salesData.map(sale => [
-      new Date(sale.sale_date).toLocaleString('es-BO'),
-      `Bs ${sale.total.toFixed(2)}`,
-      sale.payment_type,
-      sale.items?.length || 0,
-      sale.user?.name || 'N/A'
-    ]);
+    // Crear filas con detalle de cada producto vendido
+    const rows: any[] = [];
+    
+    salesData.forEach(sale => {
+      if (sale.sale_items && sale.sale_items.length > 0) {
+        // Una fila por cada producto en la venta
+        sale.sale_items.forEach((item: any) => {
+          rows.push({
+            'Nro. Venta': sale.id.substring(0, 8),
+            'Fecha': new Date(sale.sale_date).toLocaleString('es-BO', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            'Producto': item.product_variant?.product?.name || 'N/A',
+            'Talla': item.product_variant?.size || 'N/A',
+            'Cantidad': item.quantity,
+            'Precio Unitario': item.unit_price.toFixed(2),
+            'Subtotal': item.subtotal.toFixed(2),
+            'Total Venta': sale.total.toFixed(2),
+            'Descuento': sale.discount_amount?.toFixed(2) || '0.00',
+            'Tipo de Pago': sale.payment_type,
+            'Celular Cliente': sale.customer_phone || 'N/A',
+            'Vendedor': sale.user?.name || 'N/A'
+          });
+        });
+      } else {
+        // Si no hay items, crear una fila con la info básica
+        rows.push({
+          'Nro. Venta': sale.id.substring(0, 8),
+          'Fecha': new Date(sale.sale_date).toLocaleString('es-BO', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          'Producto': 'N/A',
+          'Talla': 'N/A',
+          'Cantidad': 0,
+          'Precio Unitario': '0.00',
+          'Subtotal': '0.00',
+          'Total Venta': sale.total.toFixed(2),
+          'Descuento': sale.discount_amount?.toFixed(2) || '0.00',
+          'Tipo de Pago': sale.payment_type,
+          'Celular Cliente': sale.customer_phone || 'N/A',
+          'Vendedor': sale.user?.name || 'N/A'
+        });
+      }
+    });
 
+    // Crear headers
+    const headers = Object.keys(rows[0]);
+    
+    // Crear contenido CSV con comillas para campos que puedan contener comas
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.join(','))
+      ...rows.map(row => 
+        headers.map(header => {
+          const value = row[header]?.toString() || '';
+          // Escapar comillas y envolver en comillas si contiene comas o saltos de línea
+          return value.includes(',') || value.includes('\n') || value.includes('"')
+            ? `"${value.replace(/"/g, '""')}"` 
+            : value;
+        }).join(',')
+      )
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Agregar BOM para que Excel reconozca UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);

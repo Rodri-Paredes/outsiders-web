@@ -178,7 +178,10 @@ export const reportService = {
           user:users!sales_user_id_fkey(name),
           sale_items(
             quantity,
+            unit_price,
+            subtotal,
             product_variant:product_variants(
+              size,
               product:products(name)
             )
           )
