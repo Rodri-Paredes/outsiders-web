@@ -91,11 +91,16 @@ export function SaleReceipt({ sale, onClose }: SaleReceiptProps) {
                     <td className="py-2">
                       <div className="font-medium">{item.productName}</div>
                       <div className="text-xs text-gray-600">Talla: {item.size}</div>
+                      {item.itemDiscount > 0 && (
+                        <div className="text-xs text-red-600">
+                          Desc: -Bs {item.itemDiscount.toFixed(2)}
+                        </div>
+                      )}
                     </td>
                     <td className="text-center">{item.quantity}</td>
                     <td className="text-right">{item.price.toFixed(2)}</td>
                     <td className="text-right font-semibold">
-                      {(item.price * item.quantity).toFixed(2)}
+                      {(item.price * item.quantity - item.itemDiscount).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -110,9 +115,16 @@ export function SaleReceipt({ sale, onClose }: SaleReceiptProps) {
               <span>Bs {sale.subtotal.toFixed(2)}</span>
             </div>
 
+            {items.some(item => item.itemDiscount > 0) && (
+              <div className="flex justify-between text-red-600">
+                <span>Descuentos por prenda:</span>
+                <span>- Bs {items.reduce((sum, item) => sum + item.itemDiscount, 0).toFixed(2)}</span>
+              </div>
+            )}
+
             {sale.discount_amount > 0 && (
               <div className="flex justify-between text-red-600">
-                <span>Descuento:</span>
+                <span>Descuento adicional:</span>
                 <span>- Bs {sale.discount_amount.toFixed(2)}</span>
               </div>
             )}

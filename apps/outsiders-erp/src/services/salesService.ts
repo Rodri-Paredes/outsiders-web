@@ -15,6 +15,7 @@ export const salesService = {
       variant_id: string;
       quantity: number;
       unit_price: number;
+      item_discount?: number;
     }>;
     subtotal: number;
     discount_amount: number;

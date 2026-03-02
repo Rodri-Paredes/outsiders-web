@@ -129,15 +129,19 @@ export const stockService = {
   },
 
   /**
-   * Transferir stock entre sucursales
+   * Transferir stock entre sucursales usando función transaccional atómica
+   * La función transfer_stock_atomic garantiza que ambas operaciones (origen y destino)
+   * se ejecuten en una sola transacción. Si cualquiera falla, ambas revierten.
    */
   async transferStock(
     variantId: string,
     fromBranchId: string,
     toBranchId: string,
-    quantity: number
+    quantity: number,
+    notes?: string
   ) {
     try {
+      // Validaciones básicas en frontend
       if (fromBranchId === toBranchId) {
         throw new Error('No se puede transferir a la misma sucursal');
       }
@@ -146,21 +150,28 @@ export const stockService = {
         throw new Error('La cantidad debe ser mayor a 0');
       }
 
-      // Verificar stock disponible en origen
-      const stockOrigen = await this.getStockByVariant(variantId, fromBranchId);
-      if (!stockOrigen || stockOrigen.quantity < quantity) {
-        throw new Error('Stock insuficiente en la sucursal de origen');
-      }
+      // Llamar a la función transaccional de la base de datos
+      // Esta función es ATÓMICA: si cualquier operación falla, toda la transacción revierte
+      const { data, error } = await supabase.rpc('transfer_stock_atomic', {
+        p_variant_id: variantId,
+        p_from_branch_id: fromBranchId,
+        p_to_branch_id: toBranchId,
+        p_quantity: quantity,
+        p_notes: notes || null,
+      });
 
-      // Restar del origen (cantidad negativa)
-      await this.updateStock(variantId, fromBranchId, -quantity);
+      if (error) throw error;
 
-      // Sumar al destino (cantidad positiva)
-      await this.updateStock(variantId, toBranchId, quantity);
-
-      return { success: true };
-    } catch (error) {
+      return data;
+    } catch (error: any) {
       console.error('Error transferring stock:', error);
+      // Mejorar mensajes de error
+      if (error.message?.includes('Stock insuficiente')) {
+        throw new Error(error.message);
+      }
+      if (error.message?.includes('misma sucursal')) {
+        throw new Error('No se puede transferir a la misma sucursal');
+      }
       throw error;
     }
   },

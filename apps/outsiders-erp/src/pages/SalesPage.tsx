@@ -31,8 +31,10 @@ export function SalesPage() {
   const { items } = useCartStore();
 
   useEffect(() => {
-    loadProducts();
-  }, [search, category]);
+    if (activeBranch) {
+      loadProducts();
+    }
+  }, [search, category, activeBranch]);
 
   useEffect(() => {
     if (barcodeMode && barcodeInputRef.current) {
@@ -41,6 +43,8 @@ export function SalesPage() {
   }, [barcodeMode]);
 
   const loadProducts = async () => {
+    if (!activeBranch?.id) return;
+    
     try {
       setLoading(true);
       const data = await productService.getProducts({
@@ -48,7 +52,31 @@ export function SalesPage() {
         category: category || undefined,
         includeHidden: false,
       });
-      setProducts(data);
+      
+      // Filtrar productos que tienen stock disponible en la sucursal activa
+      const productsWithStock = await Promise.all(
+        data.map(async (product) => {
+          const variants = await productService.getProductVariants(product.id);
+          const hasStock = await Promise.all(
+            variants.map(async (variant) => {
+              try {
+                const { data: stockData } = await productService.supabase
+                  .from('stock')
+                  .select('quantity')
+                  .eq('variant_id', variant.id)
+                  .eq('branch_id', activeBranch.id)
+                  .single();
+                return stockData && stockData.quantity > 0;
+              } catch {
+                return false;
+              }
+            })
+          );
+          return hasStock.some(has => has) ? product : null;
+        })
+      );
+      
+      setProducts(productsWithStock.filter(p => p !== null) as Product[]);
     } catch (error) {
       Toast.error('Error al cargar productos');
       console.error(error);

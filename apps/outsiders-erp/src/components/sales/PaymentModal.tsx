@@ -74,6 +74,7 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
           variant_id: item.variantId,
           quantity: item.quantity,
           unit_price: item.price,
+          item_discount: item.itemDiscount || 0,
         })),
         subtotal: paymentType === 'REGALO' ? 0 : subtotal,
         discount_amount: paymentType === 'REGALO' ? 0 : discount,

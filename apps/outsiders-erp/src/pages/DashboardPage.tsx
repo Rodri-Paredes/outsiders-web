@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [paymentStats, setPaymentStats] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<{
     startDate: string;
@@ -46,17 +47,19 @@ export default function DashboardPage() {
       const startDate = dateRange.startDate;
       const endDate = dateRange.endDate;
       
-      const [statsData, paymentsData, productsData] = await Promise.all([
+      const [statsData, paymentsData, productsData, salesData] = await Promise.all([
         reportService.getDashboardStats(branchId, startDate, endDate),
         reportService.getSalesByPaymentMethod(branchId, startDate, endDate),
         reportService.getTopProducts(branchId, startDate, endDate, 5),
+        reportService.getSalesReport(branchId, startDate, endDate),
       ]);
 
-      console.log('Dashboard Data:', { statsData, paymentsData, productsData });
+      console.log('Dashboard Data:', { statsData, paymentsData, productsData, salesData });
 
       setStats(statsData);
       setPaymentStats(paymentsData);
       setTopProducts(productsData);
+      setRecentSales(salesData.slice(0, 10)); // Últimas 10 ventas
     } catch (error) {
       Toast.error('Error al cargar estadísticas');
       console.error(error);
@@ -235,6 +238,118 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      {/* Recent Sales Detail */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Detalle de Ventas Recientes</h3>
+        {recentSales.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Fecha</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Producto</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Talla</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 text-sm">Cantidad</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 text-sm">Precio Unit.</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700 text-sm">Subtotal</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Pago</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentSales.map((sale) => {
+                  // Mostrar cada item de la venta como una fila
+                  if (sale.sale_items && sale.sale_items.length > 0) {
+                    // Calcular el total de descuentos individuales
+                    const totalItemDiscounts = sale.sale_items.reduce((sum: number, item: any) => 
+                      sum + (item.item_discount || 0), 0
+                    );
+                    
+                    return sale.sale_items.map((item: any, idx: number) => (
+                      <tr key={`${sale.id}-${idx}`} className="border-b border-gray-100 hover:bg-gray-50">
+                        {idx === 0 && (
+                          <td className="py-3 px-4 text-xs" rowSpan={sale.sale_items.length}>
+                            {new Date(sale.sale_date).toLocaleDateString('es-BO', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        )}
+                        <td className="py-3 px-4 text-sm">
+                          {item.product_variant?.product?.name || 'N/A'}
+                          {item.item_discount > 0 && (
+                            <div className="text-xs text-red-600 mt-1">
+                              Desc. item: -Bs {item.item_discount.toFixed(2)}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium">
+                            {item.product_variant?.size || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm">{item.quantity}</td>
+                        <td className="py-3 px-4 text-right text-sm font-semibold">
+                          {formatCurrency(item.unit_price)}
+                        </td>
+                        <td className="py-3 px-4 text-right text-sm">
+                          <div>
+                            {item.item_discount > 0 && (
+                              <div className="line-through text-gray-400 text-xs">
+                                {formatCurrency(item.subtotal)}
+                              </div>
+                            )}
+                            <div className={item.item_discount > 0 ? "text-green-600 font-semibold" : "font-semibold"}>
+                              {formatCurrency(item.subtotal - (item.item_discount || 0))}
+                            </div>
+                          </div>
+                        </td>
+                        {idx === 0 && (
+                          <td className="py-3 px-4" rowSpan={sale.sale_items.length}>
+                            <div className="space-y-1">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium inline-block ${
+                                sale.payment_type === 'EFECTIVO' ? 'bg-green-100 text-green-800' :
+                                sale.payment_type === 'QR' ? 'bg-blue-100 text-blue-800' :
+                                sale.payment_type === 'TARJETA' ? 'bg-purple-100 text-purple-800' :
+                                sale.payment_type === 'REGALO' ? 'bg-pink-100 text-pink-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {sale.payment_type}
+                              </span>
+                              {(totalItemDiscounts > 0 || sale.discount_amount > 0) && (
+                                <div className="text-xs text-gray-600 mt-2">
+                                  {totalItemDiscounts > 0 && (
+                                    <div className="text-red-600">
+                                      Desc. items: -Bs {totalItemDiscounts.toFixed(2)}
+                                    </div>
+                                  )}
+                                  {sale.discount_amount > 0 && (
+                                    <div className="text-red-600">
+                                      Desc. adicional: -Bs {sale.discount_amount.toFixed(2)}
+                                    </div>
+                                  )}
+                                  <div className="font-semibold text-gray-900 mt-1">
+                                    Total: {formatCurrency(sale.total)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ));
+                  }
+                  return null;
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-8">No hay ventas recientes</p>
+        )}
+      </Card>
     </div>
   );
 }

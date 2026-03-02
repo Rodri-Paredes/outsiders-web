@@ -54,9 +54,10 @@ export function TransferStockModal({ stockItem, onClose, onSuccess }: TransferSt
         stockItem.variant_id,
         stockItem.branch_id,
         targetBranchId,
-        quantity
+        quantity,
+        notes // Ahora las notas se guardan en la base de datos
       );
-      Toast.success('Transferencia realizada');
+      Toast.success('Transferencia realizada correctamente');
       onSuccess();
     } catch (error: any) {
       Toast.error(error.message || 'Error al transferir stock');

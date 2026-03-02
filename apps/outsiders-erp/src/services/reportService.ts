@@ -180,6 +180,7 @@ export const reportService = {
             quantity,
             unit_price,
             subtotal,
+            item_discount,
             product_variant:product_variants(
               size,
               product:products(name)

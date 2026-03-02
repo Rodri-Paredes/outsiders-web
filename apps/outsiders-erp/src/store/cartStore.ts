@@ -10,6 +10,7 @@ interface CartItem {
   quantity: number
   available: number
   imageUrl?: string
+  itemDiscount: number // Descuento individual en bolivianos
 }
 
 interface CartState {
@@ -23,6 +24,7 @@ interface CartState {
   removeItem: (variantId: string) => void
   updateQuantity: (variantId: string, quantity: number) => void
   setDiscount: (amount: number) => void
+  setItemDiscount: (variantId: string, amount: number) => void
   clearCart: () => void
   calculateTotals: () => void
 }
@@ -69,6 +71,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         quantity,
         available,
         imageUrl: product.image_url || undefined,
+        itemDiscount: 0,
       }
 
       set({ items: [...items, newItem] })
@@ -121,6 +124,32 @@ export const useCartStore = create<CartState>((set, get) => ({
     get().calculateTotals()
   },
 
+  setItemDiscount: (variantId, amount) => {
+    const { items } = get()
+    const item = items.find(i => i.variantId === variantId)
+    
+    if (!item) return
+    
+    if (amount < 0) {
+      throw new Error('El descuento no puede ser negativo')
+    }
+
+    const itemTotal = item.price * item.quantity
+    if (amount > itemTotal) {
+      throw new Error('El descuento no puede ser mayor al total del producto')
+    }
+
+    set({
+      items: items.map(i =>
+        i.variantId === variantId
+          ? { ...i, itemDiscount: amount }
+          : i
+      ),
+    })
+    
+    get().calculateTotals()
+  },
+
   clearCart: () => {
     set({
       items: [],
@@ -132,8 +161,12 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   calculateTotals: () => {
     const { items, discount } = get()
+    // Subtotal sin descuentos
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const total = subtotal - discount
+    // Total de descuentos individuales
+    const itemDiscountsTotal = items.reduce((sum, item) => sum + item.itemDiscount, 0)
+    // Total = subtotal - descuentos individuales - descuento global
+    const total = subtotal - itemDiscountsTotal - discount
 
     set({ subtotal, total })
   },

@@ -66,6 +66,7 @@ export interface SaleItem {
   quantity: number
   unit_price: number
   subtotal: number
+  item_discount: number
 }
 
 export interface Drop {

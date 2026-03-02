@@ -203,6 +203,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
 
       const productData = {
         ...formData,
+        sku: formData.sku.trim() || null, // Si está vacío, enviar null en lugar de string vacío
         images: imageUrls.length > 0 ? imageUrls : null,
         image_url: imageUrls[0] || null, // Mantener compatibilidad
         is_visible: true,

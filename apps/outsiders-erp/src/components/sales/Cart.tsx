@@ -16,6 +16,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
     removeItem,
     updateQuantity,
     setDiscount,
+    setItemDiscount,
     clearCart,
   } = useCartStore();
 
@@ -61,46 +62,76 @@ export function Cart({ onProceedToPayment }: CartProps) {
             {items.map((item) => (
               <div
                 key={item.variantId}
-                className="flex gap-3 p-3 bg-gray-50 rounded-lg"
+                className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg"
               >
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm">{item.productName}</h3>
-                  <p className="text-xs text-gray-600">Talla: {item.size}</p>
-                  <p className="text-sm font-bold mt-1">
-                    Bs {item.price.toFixed(2)}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-end gap-2">
-                  <button
-                    onClick={() => removeItem(item.variantId)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleQuantityChange(item.variantId, item.quantity - 1)}
-                      className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-8 text-center font-semibold">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => handleQuantityChange(item.variantId, item.quantity + 1)}
-                      className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded"
-                      disabled={item.quantity >= item.available}
-                    >
-                      <Plus size={12} />
-                    </button>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-sm">{item.productName}</h3>
+                    <p className="text-xs text-gray-600">Talla: {item.size}</p>
+                    <p className="text-sm font-bold mt-1">
+                      Bs {item.price.toFixed(2)} c/u
+                    </p>
                   </div>
 
-                  <p className="text-sm font-bold">
-                    Bs {(item.price * item.quantity).toFixed(2)}
-                  </p>
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => removeItem(item.variantId)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleQuantityChange(item.variantId, item.quantity - 1)}
+                        className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="w-8 text-center font-semibold">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleQuantityChange(item.variantId, item.quantity + 1)}
+                        className="w-6 h-6 flex items-center justify-center bg-gray-200 hover:bg-gray-300 rounded"
+                        disabled={item.quantity >= item.available}
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+
+                    <p className="text-sm font-bold">
+                      Bs {(item.price * item.quantity).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Descuento individual */}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                  <label className="text-xs text-gray-600 flex-shrink-0">
+                    Descuento:
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={item.price * item.quantity}
+                    value={item.itemDiscount || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      try {
+                        setItemDiscount(item.variantId, e.target.value === '' ? 0 : parseFloat(e.target.value));
+                      } catch (error: any) {
+                        // Toast.error(error.message);
+                      }
+                    }}
+                    placeholder="0.00"
+                    className="text-sm py-1"
+                  />
+                  {item.itemDiscount > 0 && (
+                    <span className="text-xs font-semibold text-green-600 flex-shrink-0">
+                      -Bs {item.itemDiscount.toFixed(2)}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -117,18 +148,28 @@ export function Cart({ onProceedToPayment }: CartProps) {
             <span className="font-semibold">Bs {subtotal.toFixed(2)}</span>
           </div>
 
-          {/* Descuento */}
+          {/* Descuentos individuales */}
+          {items.some(item => item.itemDiscount > 0) && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Descuentos por prenda:</span>
+              <span className="font-semibold">
+                -Bs {items.reduce((sum, item) => sum + item.itemDiscount, 0).toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {/* Descuento adicional */}
           <div>
             <label className="block text-sm text-gray-700 mb-1">
-              Descuento (Bs)
+              Descuento adicional (Bs)
             </label>
             <Input
               type="number"
               step="0.01"
               min="0"
               max={subtotal}
-              value={discount}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDiscount(parseFloat(e.target.value) || 0)}
+              value={discount || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDiscount(e.target.value === '' ? 0 : parseFloat(e.target.value))}
               placeholder="0.00"
             />
           </div>

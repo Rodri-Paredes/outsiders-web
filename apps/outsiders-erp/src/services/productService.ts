@@ -2,6 +2,8 @@ import { supabase } from '../lib/supabase';
 import type { Product, ProductVariant, ProductWithVariants } from '../lib/types';
 
 export const productService = {
+  supabase, // Exportar supabase para usar en otros lugares
+  
   /**
    * Obtener todos los productos con filtros opcionales
    */
