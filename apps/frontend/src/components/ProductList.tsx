@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Product } from '../lib/database.types';
 import { useCartStore } from '@/store/cartStore';
 import { productsService } from '../services/products.service';
@@ -133,21 +134,29 @@ export default function ProductList() {
                 </button>
 
                 {/* Imagen principal */}
-                <img
+                <Image
                   src={mainImage}
                   alt={product.name}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                  className={`object-cover transition-opacity duration-300 ${
                     isHovered ? 'opacity-0' : 'opacity-100'
                   }`}
+                  loading="lazy"
+                  quality={75}
                 />
                 
                 {/* Imagen en hover */}
-                <img
+                <Image
                   src={hoverImage}
                   alt={`${product.name} - vista alternativa`}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                  className={`object-cover transition-opacity duration-300 ${
                     isHovered ? 'opacity-100' : 'opacity-0'
                   }`}
+                  loading="lazy"
+                  quality={75}
                 />
 
                 <button

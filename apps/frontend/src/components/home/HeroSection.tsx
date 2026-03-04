@@ -5,60 +5,51 @@ import Image from 'next/image';
 
 export function HeroSection() {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden bg-white">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
       {/* Hero Image - Full Screen with Overlay */}
       <div className="absolute inset-0 w-full h-full">
         <Image
           src="https://obrsjuqzmllnfmldlgby.supabase.co/storage/v1/object/public/web/DSC09638.jpg"
           alt="Outsiders Collection"
           fill
-          className="object-cover opacity-40"
+          className="object-cover opacity-50"
           priority
-          quality={95}
+          quality={75}
+          sizes="100vw"
         />
-        {/* Light gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white" />
       </div>
       
       {/* Content */}
-      <div className="relative z-10 text-center px-6 max-w-7xl mx-auto">
-        <div className="space-y-12 animate-fadeInUp">
-          {/* Main Title */}
-          <div className="space-y-4">
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-light text-black tracking-tighter leading-[0.9]">
+      <div className="relative z-10 text-center px-6 max-w-6xl mx-auto">
+        <div className="space-y-8 sm:space-y-12 animate-fadeInUp">
+          {/* Title */}
+          <div className="space-y-4 sm:space-y-6">
+            <h1 className="text-6xl sm:text-8xl md:text-9xl font-bold text-white tracking-tight leading-[1.1]">
               OUTSIDERS
             </h1>
-            <div className="h-px w-24 bg-black mx-auto" />
+            <div className="h-[2px] w-16 sm:w-24 bg-white mx-auto"></div>
+            <p className="text-white/80 text-sm sm:text-base md:text-lg font-light tracking-widest uppercase">
+              Streetwear Exclusivo
+            </p>
           </div>
 
-          {/* Subtitle */}
-          <p className="text-sm md:text-base text-gray-700 tracking-[0.3em] uppercase font-light max-w-2xl mx-auto">
-            Urban Streetwear Collection
-          </p>
-
-          {/* CTA Button */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+          {/* CTA */}
+          <div>
             <Link
               href="/shop"
-              className="group relative px-10 py-4 bg-black text-white text-xs tracking-widest uppercase overflow-hidden transition-all duration-300 hover:bg-white hover:text-black border border-black"
+              className="inline-block px-8 sm:px-12 py-3 sm:py-4 bg-white text-black text-xs sm:text-sm font-bold tracking-widest uppercase transition-all duration-300 hover:bg-black hover:text-white border-2 border-white"
             >
-              <span className="relative z-10">Shop Now</span>
-            </Link>
-            <Link
-              href="/shop"
-              className="px-10 py-4 border border-black text-black text-xs tracking-widest uppercase transition-all duration-300 hover:bg-black hover:text-white"
-            >
-              View Collection
+              Ver Colección
             </Link>
           </div>
         </div>
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+      <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2 z-10 animate-bounce">
         <div className="flex flex-col items-center gap-2">
-          <span className="text-[10px] tracking-widest text-white/60 uppercase">Scroll</span>
-          <div className="w-px h-12 bg-white/30" />
+          <span className="text-[9px] sm:text-[10px] tracking-widest text-white/60 uppercase font-medium">Scroll</span>
+          <div className="w-px h-10 sm:h-12 bg-white/30" />
         </div>
       </div>
     </section>

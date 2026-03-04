@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { useCartStore } from '@/store/cartStore';
@@ -32,9 +33,30 @@ export default function ProductPage() {
       try {
         setLoading(true);
         const slug = params.id as string;
-        const products = await productsService.getProducts();
-        // Find product by checking if the slug starts with the product ID
-        const foundProduct = products.find(p => slug.startsWith(p.id));
+        
+        // Extract product ID from slug
+        // Format: UUID-name-slug or simple-id-name-slug
+        // UUIDs have format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (36 chars with dashes)
+        let productId: string;
+        
+        // Check if slug starts with UUID pattern
+        const uuidPattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+        const uuidMatch = slug.match(uuidPattern);
+        
+        if (uuidMatch) {
+          // Extract UUID
+          productId = uuidMatch[1];
+        } else {
+          // Fallback: assume first part before dash is the ID
+          productId = slug.split('-')[0];
+        }
+        
+        console.log('Loading product with ID:', productId, 'from slug:', slug);
+        
+        // Fetch only this product
+        const foundProduct = await productsService.getById(productId);
+        
+        console.log('Found product:', foundProduct);
         
         if (foundProduct) {
           setProduct(foundProduct);
@@ -53,6 +75,7 @@ export default function ProductPage() {
             setSelectedSize(firstAvailableSize);
           }
         } else {
+          console.error('Product not found for ID:', productId);
           toast.error('Producto no encontrado');
           router.push('/shop');
         }
@@ -153,11 +176,15 @@ export default function ProductPage() {
           <div>
             {images.length > 0 ? (
               <>
-                <div className="aspect-square bg-gray-50 relative mb-4">
-                  <img
+                <div className="aspect-square bg-gray-50 relative mb-4 overflow-hidden">
+                  <Image
                     src={images[currentImageIndex]}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    priority={currentImageIndex === 0}
+                    quality={80}
                   />
 
                   {/* Navigation Arrows */}
@@ -186,16 +213,20 @@ export default function ProductPage() {
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-24 h-24 border-2 transition-all ${
+                        className={`flex-shrink-0 w-24 h-24 border-2 transition-all relative overflow-hidden ${
                           index === currentImageIndex
                             ? 'border-black'
                             : 'border-gray-200 opacity-60 hover:opacity-100'
                         }`}
                       >
-                        <img
+                        <Image
                           src={img}
                           alt={`${product.name} ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                          loading="lazy"
+                          quality={60}
                         />
                       </button>
                     ))}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, MessageCircle, Menu, X } from 'lucide-react';
+import { ShoppingCart, Search, MessageCircle, Menu, X, ChevronDown } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 
 const WHATSAPP_NUMBER = '59178788416';
@@ -12,6 +12,7 @@ export default function Navbar() {
   const [itemCount, setItemCount] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,8 +50,8 @@ export default function Navbar() {
     >
       {/* Top Banner */}
       <div className="bg-black text-white text-center py-2 px-4">
-        <p className="text-xs tracking-wider uppercase font-light">
-          Envíos a todo Bolivia 🇧🇴
+        <p className="text-[10px] md:text-xs tracking-[0.3em] uppercase font-light">
+          Outsiders Studio — Envíos a todo Bolivia
         </p>
       </div>
 
@@ -58,16 +59,101 @@ export default function Navbar() {
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Left - Navigation (Desktop) */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link 
-              href="/shop" 
-              className="text-xs tracking-widest uppercase text-black hover:text-gray-600 transition-colors"
+          <nav className="hidden md:flex items-center gap-8 text-[11px] tracking-[0.25em] uppercase">
+            {/* Shop with mega menu */}
+            <div 
+              className="relative h-full flex items-center"
+              onMouseEnter={() => setShopMenuOpen(true)}
+              onMouseLeave={() => setShopMenuOpen(false)}
             >
-              Shop
-            </Link>
+              <button
+                type="button"
+                className={`flex items-center gap-1 transition-colors ${
+                  shopMenuOpen ? 'text-black' : 'text-black hover:text-gray-600'
+                }`}
+              >
+                <span>Shop</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${shopMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Mega menu */}
+              {shopMenuOpen && (
+                <div className="absolute left-0 top-full mt-3">
+                  <div className="pt-4">
+                    <div className="bg-white/95 backdrop-blur border border-gray-200 shadow-xl min-w-[560px] px-8 py-6">
+                      <div className="grid grid-cols-3 gap-8 text-[11px] leading-relaxed">
+                        {/* Column 1 */}
+                        <div>
+                          <p className="mb-3 text-[10px] font-medium tracking-[0.25em] text-gray-500">
+                            Ropa
+                          </p>
+                          <div className="space-y-2 text-black">
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Camisetas
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Sudaderas & Hoodies
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Pantalones
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Oversized
+                            </Link>
+                          </div>
+                        </div>
+
+                        {/* Column 2 */}
+                        <div>
+                          <p className="mb-3 text-[10px] font-medium tracking-[0.25em] text-gray-500">
+                            Accesorios
+                          </p>
+                          <div className="space-y-2 text-black">
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Gorras & Beanies
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Bolsos
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Calcetas
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Otros
+                            </Link>
+                          </div>
+                        </div>
+
+                        {/* Column 3 */}
+                        <div>
+                          <p className="mb-3 text-[10px] font-medium tracking-[0.25em] text-gray-500">
+                            Colecciones
+                          </p>
+                          <div className="space-y-2 text-black">
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              New Arrivals
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Best Sellers
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Últimas unidades
+                            </Link>
+                            <Link href="/shop" className="block hover:text-gray-600">
+                              Ver todo
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <Link 
               href="/#best-sellers" 
-              className="text-xs tracking-widest uppercase text-black hover:text-gray-600 transition-colors"
+              className="text-black hover:text-gray-600 transition-colors"
             >
               Best Sellers
             </Link>
@@ -83,11 +169,21 @@ export default function Navbar() {
           </button>
 
           {/* Center - Logo */}
-          <Link href="/" className="absolute left-1/2 -translate-x-1/2 flex items-center cursor-pointer">
-            <img 
+          <Link 
+            href="/" 
+            className="absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity"
+            prefetch={true}
+            scroll={true}
+            aria-label="Volver al inicio"
+          >
+            <img
               src="/logos/logo-negro.png"
               alt="OUTSIDERS"
-              className="h-8 md:h-10 w-auto cursor-pointer"
+              width="120"
+              height="40"
+              className="h-8 md:h-10 w-auto pointer-events-none"
+              loading="eager"
+              decoding="sync"
             />
           </Link>
 

@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 
 export function NewArrivals() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -27,11 +27,6 @@ export function NewArrivals() {
 
     loadProducts();
   }, []);
-
-  const handleProductClick = (product: Product) => {
-    const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    router.push(`/producto/${slug}`);
-  };
 
   if (loading) {
     return (
@@ -73,19 +68,26 @@ export function NewArrivals() {
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <div
+          {products.map((product) => {
+            const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+            return (
+            <Link
               key={product.id}
-              className="group cursor-pointer"
-              onClick={() => handleProductClick(product)}
+              href={`/producto/${slug}`}
+              className="group cursor-pointer block"
+              prefetch={true}
             >
               {/* Image */}
               <div className="aspect-square bg-gray-50 relative overflow-hidden mb-4">
                 {product.image_url || (product as any).images?.[0] ? (
-                  <img
+                  <Image
                     src={(product as any).images?.[0] || product.image_url || ''}
                     alt={product.name}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    quality={75}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
@@ -125,8 +127,8 @@ export function NewArrivals() {
                   </span>
                 )}
               </div>
-            </div>
-          ))}
+            </Link>
+          )})}
         </div>
       </div>
     </section>

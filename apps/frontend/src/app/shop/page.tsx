@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
 
 export default function ShopPage() {
-  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,11 +35,6 @@ export default function ShopPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleProductClick = (product: Product) => {
-    const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-    router.push(`/producto/${slug}`);
   };
 
   const filteredProducts = products.filter(product => {
@@ -169,20 +164,26 @@ export default function ShopPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => {
                   const hasStock = (product as any).hasStock;
+                  const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
                   
                   return (
-                  <div
+                  <Link
                     key={product.id}
-                    className="group cursor-pointer"
-                    onClick={() => handleProductClick(product)}
+                    href={`/producto/${slug}`}
+                    className="group cursor-pointer block"
+                    prefetch={true}
                   >
                     {/* Image */}
                     <div className="aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100">
                       {product.image_url || (product as any).images?.[0] ? (
-                        <img
+                        <Image
                           src={(product as any).images?.[0] || product.image_url || ''}
                           alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          fill
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          loading="lazy"
+                          quality={75}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
@@ -214,7 +215,7 @@ export default function ShopPage() {
                         ${product.price?.toFixed(2) || '0.00'}
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 )})}
               </div>
             )}

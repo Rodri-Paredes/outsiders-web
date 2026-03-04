@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
+import Image from 'next/image';
 import { X, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { productsService } from '@/services/products.service';
@@ -167,12 +168,16 @@ export function CartDrawer() {
                     return (
                     <div key={itemId} className="flex gap-3 md:gap-4 pb-4 border-b border-gray-100">
                       {/* Image */}
-                      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100">
+                      <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100 relative overflow-hidden">
                         {item.image_url ? (
-                          <img
+                          <Image
                             src={item.image_url}
                             alt={item.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 80px, 96px"
+                            className="object-cover"
+                            loading="lazy"
+                            quality={60}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold text-xl md:text-2xl">

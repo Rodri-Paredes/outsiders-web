@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Product } from '@/lib/database.types';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
@@ -119,21 +120,29 @@ export default function DropsGrid() {
               <div className="relative">
                 <div className="relative bg-dark-bg aspect-[4/5] overflow-hidden">
                   {/* Imagen principal */}
-                  <img
+                  <Image
                     src={mainImage}
                     alt={product.name}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className={`object-cover transition-all duration-500 ${
                       isHovered ? 'opacity-0 scale-110' : 'opacity-100 scale-100'
                     }`}
+                    loading="lazy"
+                    quality={75}
                   />
                   
                   {/* Imagen en hover */}
-                  <img
+                  <Image
                     src={altImage}
                     alt={`${product.name} - vista alternativa`}
-                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className={`object-cover transition-all duration-500 ${
                       isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
                     }`}
+                    loading="lazy"
+                    quality={75}
                   />
 
                   {/* Overlay con botón en hover */}

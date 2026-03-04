@@ -40,14 +40,45 @@ export const productsService = {
   },
 
   async getById(id: string): Promise<Product | null> {
+    console.log('Fetching product with ID:', id);
+    
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select(`
+        *,
+        variants:product_variants(
+          id,
+          size,
+          stock:stock(quantity)
+        )
+      `)
       .eq('id', id)
+      .eq('is_visible', true)
       .single()
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error('Error fetching product from Supabase:', error);
+      return null;
+    }
+    
+    if (!data) {
+      console.error('No data returned for product ID:', id);
+      return null;
+    }
+    
+    console.log('Product data from Supabase:', data);
+    
+    // Calcular stock total
+    const totalStock = data.variants?.reduce((sum: number, variant: any) => {
+      const variantStock = variant.stock?.reduce((s: number, st: any) => s + (st.quantity || 0), 0) || 0;
+      return sum + variantStock;
+    }, 0) || 0;
+    
+    return {
+      ...data,
+      stock: totalStock,
+      hasStock: totalStock > 0
+    } as any;
   },
 
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {

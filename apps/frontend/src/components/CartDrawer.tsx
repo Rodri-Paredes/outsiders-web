@@ -2,6 +2,7 @@
 
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useCartStore } from '@/store/cartStore';
 import { useState } from 'react';
 
@@ -73,12 +74,16 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                   <div className="flex gap-4">
                     {/* Image */}
-                    <div className="w-20 h-20 bg-dark-card flex-shrink-0">
+                    <div className="w-20 h-20 bg-dark-card flex-shrink-0 relative overflow-hidden">
                       {item.image_url ? (
-                        <img
+                        <Image
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                          loading="lazy"
+                          quality={60}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20 text-2xl">

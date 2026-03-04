@@ -15,7 +15,9 @@ export function FeaturedBanner() {
             alt="Featured Collection"
             fill
             className="object-cover"
-            quality={90}
+            quality={75}
+            sizes="(max-width: 768px) 100vw, 50vw"
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-black/20" />
         </div>
