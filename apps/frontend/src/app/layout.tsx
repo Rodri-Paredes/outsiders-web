@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Outfit } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -7,7 +7,7 @@ import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { ToastProvider } from '@/components/ToastProvider';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 
-const inter = Inter({ subsets: ['latin'] });
+const outfit = Outfit({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://outsiders-web.vercel.app'),
@@ -28,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={inter.className}>
+      <body className={outfit.className}>
         <Navbar />
         <main className="min-h-screen">
           {children}

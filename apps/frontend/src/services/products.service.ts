@@ -1,38 +1,109 @@
-import { supabase } from '../lib/supabase'
 import { Product } from '../lib/database.types'
+
+const MOCK_PRODUCTS: any[] = [
+  {
+    id: '1',
+    name: 'Star Boxy Tee White',
+    description: 'Heavyweight 100% cotton boxy tee. Oversized fit.',
+    price: 45,
+    image_url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&h=750&fit=crop',
+    category: 'Camisetas',
+    is_visible: true,
+    stock: 20,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    name: 'Valentine\'s Tee Black',
+    description: 'Special edition graphic tee in premium cotton.',
+    price: 50,
+    image_url: 'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=600&h=750&fit=crop',
+    category: 'Camisetas',
+    is_visible: true,
+    stock: 15,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '3',
+    name: 'Ice Cube Tee White',
+    description: 'Relaxed fit printed tee with custom artwork.',
+    price: 45,
+    image_url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=750&fit=crop',
+    category: 'Camisetas',
+    is_visible: true,
+    stock: 50,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '4',
+    name: 'A New Star Hoodie Black',
+    description: 'Heavyweight french terry zip hoodie.',
+    price: 120,
+    image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&h=750&fit=crop',
+    category: 'Sudaderas',
+    is_visible: true,
+    stock: 10,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '5',
+    name: 'A New Star Hoodie Light Grey',
+    description: 'Heavyweight french terry hoodie. Everyday essential.',
+    price: 120,
+    image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=750&fit=crop',
+    category: 'Sudaderas',
+    is_visible: true,
+    stock: 0,
+    hasStock: false,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '6',
+    name: 'A New Star Joggers Black',
+    description: 'Relaxed fit joggers with embroidery detail.',
+    price: 100,
+    image_url: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=750&fit=crop',
+    category: 'Pantalones',
+    is_visible: true,
+    stock: 25,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '7',
+    name: 'A New Star Joggers Light Grey',
+    description: 'Relaxed fit joggers with embroidery detail.',
+    price: 100,
+    image_url: 'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=600&h=750&fit=crop',
+    category: 'Pantalones',
+    is_visible: true,
+    stock: 30,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: '8',
+    name: 'Star Boxy Tee Navy',
+    description: 'Heavyweight 100% cotton boxy tee. Oversized fit.',
+    price: 45,
+    image_url: 'https://images.unsplash.com/photo-1623876229339-0df13d6a0027?w=600&h=750&fit=crop',
+    category: 'Camisetas',
+    is_visible: true,
+    stock: 5,
+    hasStock: true,
+    created_at: new Date().toISOString()
+  }
+]
 
 export const productsService = {
   async getProducts(): Promise<Product[]> {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        variants:product_variants(
-          id,
-          size,
-          stock:stock(quantity)
-        )
-      `)
-      .eq('is_visible', true)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    
-    // Calcular stock total por producto
-    const productsWithStock = (data || []).map(product => {
-      const totalStock = product.variants?.reduce((sum: number, variant: any) => {
-        const variantStock = variant.stock?.reduce((s: number, st: any) => s + (st.quantity || 0), 0) || 0;
-        return sum + variantStock;
-      }, 0) || 0;
-      
-      return {
-        ...product,
-        stock: totalStock,
-        hasStock: totalStock > 0
-      };
-    });
-    
-    return productsWithStock as any;
+    // Simular latencia de red
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return MOCK_PRODUCTS;
   },
 
   async getAll(): Promise<Product[]> {
@@ -40,76 +111,20 @@ export const productsService = {
   },
 
   async getById(id: string): Promise<Product | null> {
-    console.log('Fetching product with ID:', id);
-    
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        variants:product_variants(
-          id,
-          size,
-          stock:stock(quantity)
-        )
-      `)
-      .eq('id', id)
-      .eq('is_visible', true)
-      .single()
-
-    if (error) {
-      console.error('Error fetching product from Supabase:', error);
-      return null;
-    }
-    
-    if (!data) {
-      console.error('No data returned for product ID:', id);
-      return null;
-    }
-    
-    console.log('Product data from Supabase:', data);
-    
-    // Calcular stock total
-    const totalStock = data.variants?.reduce((sum: number, variant: any) => {
-      const variantStock = variant.stock?.reduce((s: number, st: any) => s + (st.quantity || 0), 0) || 0;
-      return sum + variantStock;
-    }, 0) || 0;
-    
-    return {
-      ...data,
-      stock: totalStock,
-      hasStock: totalStock > 0
-    } as any;
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const product = MOCK_PRODUCTS.find(p => p.id === id);
+    return product || null;
   },
 
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
-    const { data, error } = await supabase
-      .from('products')
-      .insert(product)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
+    throw new Error("Mock service: Cannot create products");
   },
 
   async update(id: string, updates: Partial<Product>): Promise<Product> {
-    const { data, error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
+    throw new Error("Mock service: Cannot update products");
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
+    throw new Error("Mock service: Cannot delete products");
   }
 }

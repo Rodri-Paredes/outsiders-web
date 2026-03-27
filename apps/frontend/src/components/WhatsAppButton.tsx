@@ -2,7 +2,7 @@
 
 import { MessageCircle } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '59178788416'; // Reemplaza con tu número
+const WHATSAPP_NUMBER = '59164884458'; // Reemplaza con tu número
 
 export function WhatsAppButton() {
   const handleClick = () => {
@@ -18,7 +18,7 @@ export function WhatsAppButton() {
       aria-label="Contactar por WhatsApp"
     >
       <MessageCircle className="w-6 h-6" />
-      
+
       {/* Tooltip */}
       <span className="absolute right-full mr-3 px-4 py-2 bg-[#25D366] text-white text-xs font-light tracking-wider uppercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded">
         Contáctanos

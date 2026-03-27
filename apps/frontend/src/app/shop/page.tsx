@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
+import { Search } from 'lucide-react';
 
-export default function ShopPage() {
+// Inner component handling the logic
+function ShopContent() {
   const [products, setProducts] = useState<Product[]>([]);
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [mounted, setMounted] = useState(false);
 
@@ -23,6 +28,15 @@ export default function ShopPage() {
     useCartStore.persist.rehydrate();
     loadProducts();
   }, []);
+
+  // Effect to handle URL param changes (e.g. from SearchOverlay while already on the page)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) {
+      setSearchTerm(q);
+      setSelectedCategory('all'); // Reset category to prioritize search term
+    }
+  }, [searchParams]);
 
   const loadProducts = async () => {
     try {
@@ -61,76 +75,22 @@ export default function ShopPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white pt-24 pb-20">
-      <div className="max-w-[1600px] mx-auto px-4 md:px-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filters - Desktop */}
-          <aside className="hidden lg:block w-72 flex-shrink-0">
-            <div className="sticky top-32 space-y-6">
-              {/* Search */}
-              <div>
-                <label className="block text-xs font-bold text-black mb-3 uppercase tracking-widest">
-                  Buscar
-                </label>
-                <input
-                  type="text"
-                  placeholder="Buscar productos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors"
-                />
-              </div>
-
-              {/* Categories */}
-              <div>
-                <h3 className="text-xs font-bold text-black mb-3 uppercase tracking-widest">
-                  Categorías
-                </h3>
-                <div className="space-y-1">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setSelectedCategory(category)}
-                      className={`block w-full text-left px-4 py-3 text-sm font-medium uppercase tracking-wide transition-all ${
-                        selectedCategory === category
-                          ? 'bg-black text-white'
-                          : 'text-black hover:bg-gray-100 border border-transparent hover:border-gray-200'
-                      }`}
-                    >
-                      {category === 'all' ? 'Todos los productos' : category}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Mobile Filters */}
-            <div className="space-y-4 mb-8">
-              {/* Search - Mobile */}
-              <div className="lg:hidden">
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-black"
-                />
-              </div>
-              
-              {/* Categories - Mobile */}
-              <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="min-h-screen bg-white pt-36 lg:pt-40 pb-20">
+      <div className="container-custom">
+        <div className="flex flex-col gap-8">
+          {/* Horizontal Filters */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-200 pb-6 w-full">
+            {/* Categories */}
+            <div className="flex-1 min-w-0 w-full">
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full">
                 {categories.map((category) => (
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-5 py-2.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border-2 ${
-                      selectedCategory === category
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-black border-gray-200 hover:border-black'
-                    }`}
+                    className={`px-4 py-2 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === category
+                      ? 'text-black border-b-2 border-black'
+                      : 'text-gray-400 hover:text-black'
+                      }`}
                   >
                     {category === 'all' ? 'Todos' : category}
                   </button>
@@ -138,6 +98,25 @@ export default function ShopPage() {
               </div>
             </div>
 
+            {/* Search */}
+            <div className="w-full md:w-80 flex-shrink-0">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-4 pr-10 py-3 bg-transparent border-b border-gray-200 text-sm font-medium text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors">
+                  <Search size={18} strokeWidth={2} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 w-full">
             {/* Loading State */}
             {loading && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -165,63 +144,77 @@ export default function ShopPage() {
                 {filteredProducts.map((product) => {
                   const hasStock = (product as any).hasStock;
                   const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-                  
+
                   return (
-                  <Link
-                    key={product.id}
-                    href={`/producto/${slug}`}
-                    className="group cursor-pointer block"
-                    prefetch={true}
-                  >
-                    {/* Image */}
-                    <div className="aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100">
-                      {product.image_url || (product as any).images?.[0] ? (
-                        <Image
-                          src={(product as any).images?.[0] || product.image_url || ''}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          loading="lazy"
-                          quality={75}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
-                          {product.name.charAt(0)}
-                        </div>
-                      )}
-                      
-                      {/* Stock Badge */}
-                      {!hasStock && (
-                        <div className="absolute top-3 right-3">
-                          <span className="inline-block px-3 py-1 bg-red-500 text-white text-xs font-bold uppercase tracking-widest">
-                            SOLD OUT
-                          </span>
-                        </div>
-                      )}
+                    <Link
+                      key={product.id}
+                      href={`/producto/${slug}`}
+                      className="group cursor-pointer block"
+                      prefetch={true}
+                    >
+                      {/* Image */}
+                      <div className="aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100">
+                        {product.image_url || (product as any).images?.[0] ? (
+                          <Image
+                            src={(product as any).images?.[0] || product.image_url || ''}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            loading="lazy"
+                            quality={75}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
+                            {product.name.charAt(0)}
+                          </div>
+                        )}
 
-                      {/* Quick View on Hover */}
-                      {hasStock && (
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
-                      )}
-                    </div>
+                        {/* Stock Badge */}
+                        {!hasStock && (
+                          <div className="absolute top-3 right-3">
+                            <span className="inline-block px-3 py-1 bg-red-500 text-white text-xs font-bold uppercase tracking-widest">
+                              SOLD OUT
+                            </span>
+                          </div>
+                        )}
 
-                    {/* Product Info */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-black uppercase tracking-wide line-clamp-2 group-hover:text-gray-600 transition-colors">
-                        {product.name}
-                      </h3>
-                      <p className="text-lg font-bold text-black">
-                        ${product.price?.toFixed(2) || '0.00'}
-                      </p>
-                    </div>
-                  </Link>
-                )})}
+                        {/* Quick View on Hover */}
+                        {hasStock && (
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold text-black uppercase tracking-wide line-clamp-2 group-hover:text-gray-600 transition-colors">
+                          {product.name}
+                        </h3>
+                        <p className="text-lg font-bold text-black">
+                          ${product.price?.toFixed(2) || '0.00'}
+                        </p>
+                      </div>
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrapping ShopPage in Suspense since it uses useSearchParams
+export default function ShopPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white pt-32 pb-20 flex items-center justify-center">
+        <p className="text-gray-400 text-xs tracking-[0.3em] uppercase animate-pulse">Cargando Tienda...</p>
+      </div>
+    }>
+      <ShopContent />
+    </Suspense>
   );
 }

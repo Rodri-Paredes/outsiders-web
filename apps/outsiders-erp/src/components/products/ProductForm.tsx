@@ -203,7 +203,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
 
       const productData = {
         ...formData,
-        sku: formData.sku.trim() || null, // Si está vacío, enviar null en lugar de string vacío
+        sku: formData.sku?.trim() ? formData.sku.trim() : `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`, // Auto-generar si está vacío
         images: imageUrls.length > 0 ? imageUrls : null,
         image_url: imageUrls[0] || null, // Mantener compatibilidad
         is_visible: true,
@@ -262,9 +262,13 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       }
 
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
-      Toast.error('Error al guardar el producto');
+      if (error?.code === '23505' && error?.message?.includes('sku')) {
+        Toast.error('El SKU ingresado ya está en uso por otro producto. Por favor ingresa uno diferente.');
+      } else {
+        Toast.error('Error al guardar el producto');
+      }
     } finally {
       setLoading(false);
     }

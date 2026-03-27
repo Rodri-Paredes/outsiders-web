@@ -21,7 +21,7 @@
   }
 
   body {
-    @apply bg-black text-white font-sans antialiased;
+    @apply bg-off-white text-black font-sans antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   }
 
@@ -56,27 +56,27 @@
   }
 }
 
-/* Custom scrollbar - Dark Theme */
+/* Custom scrollbar - Light Luxury Theme */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--black);
+  background: var(--off-white);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--dark-card);
-  border-radius: 0;
+  background: var(--gray-lighter);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-dark);
+  background: var(--gray-light);
 }
 
 /* Typography styles - Streetwear Premium */
 h1, h2, h3, h4, h5, h6 {
-  @apply font-light tracking-tight text-white;
+  @apply font-medium tracking-tight text-black;
   letter-spacing: -0.02em;
 }
 

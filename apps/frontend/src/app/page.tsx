@@ -1,16 +1,23 @@
 import { HeroSection } from '@/components/home/HeroSection';
-// import { FeaturedDrops } from '@/components/home/FeaturedDrops';
-import { FeaturedBanner } from '@/components/home/FeaturedBanner';
 import { NewArrivals } from '@/components/home/NewArrivals';
-// import { Newsletter } from '@/components/home/Newsletter';
+import { CategoryGrid } from '@/components/home/CategoryGrid';
+import { supabase } from '@/lib/supabase';
+// import { FeaturedBanner } from '@/components/home/FeaturedBanner';
 
-export default function HomePage() {
+export const revalidate = 60; // ISR cache de 60 segundos
+
+export default async function HomePage() {
+  const { data: heroData } = await supabase
+    .from('site_content')
+    .select('content')
+    .eq('section_key', 'home_hero')
+    .single();
+
   return (
     <>
-      <HeroSection />
-      <FeaturedBanner />
+      <HeroSection content={heroData?.content} />
       <NewArrivals />
-      {/* <Newsletter /> */}
+      <CategoryGrid />
     </>
   );
 }

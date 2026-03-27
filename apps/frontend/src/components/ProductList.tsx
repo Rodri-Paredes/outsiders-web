@@ -64,7 +64,7 @@ export default function ProductList() {
 
   const handleAddToCart = () => {
     if (!selectedProduct) return;
-    
+
     try {
       addItem({
         productId: selectedProduct.id,
@@ -100,94 +100,68 @@ export default function ProductList() {
         return (
           <article
             key={product.id}
-            className="group cursor-pointer rounded-lg border-2 border-gray-200 bg-white overflow-hidden hover:border-[#2d5f5d] transition-all hover:shadow-xl"
+            className="group cursor-pointer flex flex-col w-full"
             onMouseEnter={() => setHoveredProduct(product.id)}
             onMouseLeave={() => setHoveredProduct(null)}
+            onClick={() => handleOpenSizeModal(product)}
           >
-            <div className="relative">
-              <div className="relative bg-gray-50 aspect-[4/5] overflow-hidden">
-                <span className="absolute top-3 left-3 z-10 text-xs font-bold bg-[#2d5f5d] text-[#d4a574] px-3 py-1 rounded-sm">
-                  nuevo 🔥
-                </span>
-
-                <button
-                  type="button"
-                  aria-label="Save"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:bg-[#2d5f5d] hover:text-[#d4a574] hover:border-[#2d5f5d] transition-all"
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M7 3h10a2 2 0 0 1 2 2v16l-7-4-7 4V5a2 2 0 0 1 2-2z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </button>
-
-                {/* Imagen principal */}
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                  className={`object-cover transition-opacity duration-300 ${
-                    isHovered ? 'opacity-0' : 'opacity-100'
-                  }`}
-                  loading="lazy"
-                  quality={75}
-                />
-                
-                {/* Imagen en hover */}
-                <Image
-                  src={hoverImage}
-                  alt={`${product.name} - vista alternativa`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                  className={`object-cover transition-opacity duration-300 ${
-                    isHovered ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  loading="lazy"
-                  quality={75}
-                />
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenSizeModal(product);
-                  }}
-                  disabled={!product.stock || product.stock === 0}
-                  className={`absolute bottom-0 left-0 w-full py-3 text-sm font-bold translate-y-full group-hover:translate-y-0 transition-transform duration-300 ${
-                    !product.stock || product.stock === 0
-                      ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                      : 'bg-[#2d5f5d] text-[#d4a574] hover:bg-[#3a6b6a]'
-                  }`}
-                >
-                  {!product.stock || product.stock === 0 ? 'Sin Stock' : 'Agregar al Carrito'}
-                </button>
+            {/* Image Container */}
+            <div className="relative bg-[#f5f5f5] aspect-[4/5] w-full overflow-hidden mb-3">
+              {/* Hover Right Arrow like in Gods Brand */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 9L5 5L1 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </div>
+
+              {/* Imagen principal */}
+              <Image
+                src={mainImage}
+                alt={product.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-100'
+                  }`}
+                loading="lazy"
+                quality={80}
+              />
+
+              {/* Imagen en hover */}
+              <Image
+                src={hoverImage}
+                alt={`${product.name} - alternativa`}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'
+                  }`}
+                loading="lazy"
+                quality={80}
+              />
             </div>
 
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-sm font-bold text-black">
-                  {product.name}
+            {/* Info Container */}
+            <div className="flex justify-between items-start w-full px-1">
+              {/* Left Side: Name and Price */}
+              <div className="flex flex-col">
+                <h3 className="text-[10px] md:text-[11px] font-bold text-black mb-1 capitalize tracking-tight">
+                  {product.name.toLowerCase()}
                 </h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] md:text-[11px] font-bold text-blue-700">
+                    ${Number(product.price).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-gray-400 line-through font-medium">
+                    ${(Number(product.price) * 1.4).toFixed(2)}
+                  </span>
+                </div>
               </div>
-              <p className="mt-2 text-base font-bold text-black">Bs. {Number(product.price).toFixed(2)}</p>
-              {(product.stock || 0) > 0 && (product.stock || 0) <= 5 && (
-                <p className="mt-1 text-xs text-orange-500 font-semibold">
-                  ¡Solo quedan {product.stock} unidades!
-                </p>
-              )}
+
+              {/* Right Side: Colors */}
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-black border border-gray-200"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-gray-300 border border-gray-200"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#fdfdfd] border border-gray-300 shadow-sm"></div>
+              </div>
             </div>
           </article>
         );
@@ -197,11 +171,11 @@ export default function ProductList() {
       {selectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             onClick={() => setSelectedProduct(null)}
           />
-          
+
           {/* Modal */}
           <div className="relative bg-white border-2 border-gray-200 max-w-md w-full p-8 rounded-lg">
             <button
@@ -227,11 +201,10 @@ export default function ProductList() {
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
-                    className={`py-3 text-sm font-bold tracking-wider transition-all rounded ${
-                      selectedSize === size
+                    className={`py-3 text-sm font-bold tracking-wider transition-all rounded ${selectedSize === size
                         ? 'bg-[#2d5f5d] text-[#d4a574]'
                         : 'bg-gray-100 text-black border-2 border-gray-200 hover:border-[#2d5f5d]'
-                    }`}
+                      }`}
                   >
                     {size}
                   </button>

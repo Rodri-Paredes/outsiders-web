@@ -17,6 +17,7 @@ const SalesPage = lazy(() => import('@/pages/SalesPage').then(m => ({ default: m
 const StockPage = lazy(() => import('@/pages/StockPage').then(m => ({ default: m.StockPage })))
 const CashPage = lazy(() => import('@/pages/CashPage').then(m => ({ default: m.CashPage })))
 const DropsPage = lazy(() => import('@/pages/DropsPage').then(m => ({ default: m.DropsPage })))
+const CmsPage = lazy(() => import('@/pages/CmsPage'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
 
 // Protected Route Component
@@ -100,6 +101,7 @@ function App() {
             <Route path="stock" element={<StockPage />} />
             <Route path="cash" element={<CashPage />} />
             <Route path="drops" element={<DropsPage />} />
+            <Route path="cms" element={<CmsPage />} />
             <Route path="reports" element={<ReportsPage />} />
           </Route>
 
