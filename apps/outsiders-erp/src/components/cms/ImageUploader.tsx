@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
-import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, Loader2 } from 'lucide-react'
+
+// ...
+
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -32,10 +35,12 @@ export default function ImageUploader({
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
+        if (!file) continue
+        
         const fileExt = file.name.split('.').pop()
         const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from(bucket)
           .upload(fileName, file)
 
@@ -51,9 +56,11 @@ export default function ImageUploader({
       }
 
       if (multiple) {
-        onChange([...(Array.isArray(value) ? value : []), ...uploadedUrls])
+        onChange([...(Array.isArray(value) ? value : []), ...uploadedUrls] as any)
       } else {
-        onChange(uploadedUrls[0])
+        if (uploadedUrls.length > 0) {
+           onChange(uploadedUrls[0] as any)
+        }
       }
 
       if (fileInputRef.current) {
