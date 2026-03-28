@@ -4,6 +4,7 @@ import { PaymentType, UserRole, DropStatus, CashRegisterStatus, MovementType } f
 
 export const CATEGORIES = [
   'Camisetas',
+  'Soleras',
   'Sudaderas',
   'Pantalones',
   'Accesorios',
