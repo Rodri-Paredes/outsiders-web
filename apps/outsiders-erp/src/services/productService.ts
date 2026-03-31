@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Product, ProductVariant, ProductWithVariants } from '../lib/types';
+import { compressImage } from '../lib/imageCompression';
 
 export const productService = {
   supabase, // Exportar supabase para usar en otros lugares
@@ -191,13 +192,14 @@ export const productService = {
    */
   async uploadProductImage(file: File): Promise<string> {
     try {
-      const fileExt = file.name.split('.').pop();
+      const compressedFile = await compressImage(file);
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 

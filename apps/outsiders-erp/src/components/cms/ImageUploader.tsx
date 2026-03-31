@@ -5,6 +5,7 @@ import { Upload, X, Loader2 } from 'lucide-react'
 
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import { compressImage } from '@/lib/imageCompression'
 
 interface ImageUploaderProps {
   value: string | string[]
@@ -37,12 +38,13 @@ export default function ImageUploader({
         const file = files[i]
         if (!file) continue
         
-        const fileExt = file.name.split('.').pop()
+        const compressedFile = await compressImage(file);
+        const fileExt = compressedFile.name.split('.').pop() || 'jpg';
         const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(fileName, file)
+          .upload(fileName, compressedFile)
 
         if (uploadError) {
           throw uploadError

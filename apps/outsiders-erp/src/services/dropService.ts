@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Drop, DropWithProducts, DropStatus } from '../lib/types';
+import { compressImage } from '../lib/imageCompression';
 
 export const dropService = {
   /**
@@ -225,13 +226,14 @@ export const dropService = {
    */
   async uploadDropImage(file: File, _type: 'image' | 'banner'): Promise<string> {
     try {
-      const fileExt = file.name.split('.').pop();
+      const compressedFile = await compressImage(file);
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `drops/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('drops')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 
