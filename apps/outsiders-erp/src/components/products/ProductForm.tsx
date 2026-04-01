@@ -95,8 +95,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         return;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        Toast.error('Las imágenes no deben superar 5MB cada una');
+      if (file.size > 20 * 1024 * 1024) {
+        Toast.error('Las imágenes no deben superar 20MB cada una');
         return;
       }
     }

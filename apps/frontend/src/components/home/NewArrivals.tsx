@@ -182,11 +182,8 @@ export function NewArrivals() {
                         {product.name.toLowerCase()}
                       </h3>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] md:text-[11px] font-bold text-blue-700">
+                        <span className="text-[10px] md:text-[11px] font-bold text-black">
                           ${Number(product.price).toFixed(2)}
-                        </span>
-                        <span className="text-[10px] text-gray-400 line-through font-medium">
-                          ${(Number(product.price) * 1.4).toFixed(2)}
                         </span>
                       </div>
                     </div>

@@ -53,8 +53,8 @@ export function DropForm({ drop, onClose, onSuccess }: DropFormProps) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      Toast.error('La imagen no debe superar 5MB');
+    if (file.size > 20 * 1024 * 1024) {
+      Toast.error('La imagen no debe superar 20MB');
       return;
     }
 
@@ -270,7 +270,7 @@ export function DropForm({ drop, onClose, onSuccess }: DropFormProps) {
                     />
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
-                    Tamaño máximo: 5MB. Formatos: JPG, PNG, WEBP
+                    Tamaño máximo: 20MB. Formatos: JPG, PNG, WEBP
                   </p>
                 </div>
               </div>
