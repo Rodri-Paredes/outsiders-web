@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Tag, Percent } from 'lucide-react';
 import { productService } from '../services/productService';
-import { Product } from '../lib/types';
+import { Product, ProductTag } from '../lib/types';
 import { CATEGORIES } from '../lib/constants';
 import { Button } from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -19,14 +19,37 @@ export function ProductsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [includeHidden, setIncludeHidden] = useState(false);
+  const [hasDiscount, setHasDiscount] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  // Tags filter state
+  const [availableTags, setAvailableTags] = useState<ProductTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
 
   const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
     loadProducts();
-  }, [debouncedSearch, category, includeHidden]);
+  }, [debouncedSearch, category, includeHidden, hasDiscount, selectedTagIds]);
+
+  // Load tags when category changes
+  useEffect(() => {
+    loadTags();
+  }, [category]);
+
+  const loadTags = async () => {
+    try {
+      const tags = await productService.getProductTags(category || undefined);
+      setAvailableTags(tags);
+      // Clear selected tags that are no longer available
+      setSelectedTagIds(prev => 
+        prev.filter(id => tags.some(t => t.id === id))
+      );
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -35,6 +58,8 @@ export function ProductsPage() {
         search: debouncedSearch,
         category: category || undefined,
         includeHidden,
+        hasDiscount: hasDiscount || undefined,
+        tag_ids: selectedTagIds.length > 0 ? selectedTagIds : undefined,
       });
       setProducts(data);
     } catch (error) {
@@ -84,10 +109,42 @@ export function ProductsPage() {
     handleFormClose();
   };
 
+  const toggleTagFilter = (tagId: string) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  const clearFilters = () => {
+    setCategory('');
+    setSearch('');
+    setIncludeHidden(false);
+    setHasDiscount(false);
+    setSelectedTagIds([]);
+  };
+
+  const hasActiveFilters = category || search || includeHidden || hasDiscount || selectedTagIds.length > 0;
+
   const categoryOptions = [
     { value: '', label: 'Todas las categorías' },
     ...CATEGORIES.map((cat) => ({ value: cat, label: cat })),
   ];
+
+  // Group tags by tag_group
+  const tagsByGroup: Record<string, ProductTag[]> = {};
+  availableTags.forEach(tag => {
+    const group = tag.tag_group;
+    if (!tagsByGroup[group]) tagsByGroup[group] = [];
+    tagsByGroup[group]!.push(tag);
+  });
+
+  const tagGroupLabels: Record<string, string> = {
+    tipo: 'Tipo',
+    material: 'Material',
+    gramaje: 'Gramaje',
+  };
 
   return (
     <div className="space-y-6">
@@ -103,7 +160,8 @@ export function ProductsPage() {
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg shadow p-4">
+      <div className="bg-white rounded-lg shadow p-4 space-y-4">
+        {/* Row 1: Search + Category + Checkboxes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             placeholder="Buscar productos..."
@@ -118,16 +176,77 @@ export function ProductsPage() {
             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCategory(e.target.value)}
           />
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeHidden}
-              onChange={(e) => setIncludeHidden(e.target.checked)}
-              className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-            />
-            <span className="text-sm text-gray-700">Mostrar ocultos</span>
-          </label>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeHidden}
+                onChange={(e) => setIncludeHidden(e.target.checked)}
+                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+              />
+              <span className="text-sm text-gray-700">Ocultos</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasDiscount}
+                onChange={(e) => setHasDiscount(e.target.checked)}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <span className="text-sm text-gray-700 flex items-center gap-1">
+                <Percent size={14} />
+                Con descuento
+              </span>
+            </label>
+          </div>
         </div>
+
+        {/* Row 2: Tag filters (dynamic based on category) */}
+        {availableTags.length > 0 && (
+          <div className="border-t pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Filtrar por atributos:</span>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {Object.entries(tagsByGroup).map(([group, tags]) => (
+                <div key={group} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 uppercase tracking-wider">
+                    {tagGroupLabels[group] || group}:
+                  </span>
+                  <div className="flex gap-1.5">
+                    {tags.map(tag => (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggleTagFilter(tag.id)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                          selectedTagIds.includes(tag.id)
+                            ? 'bg-black text-white shadow'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <div className="flex justify-end">
+            <button
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Grid de productos */}
@@ -142,12 +261,12 @@ export function ProductsPage() {
           icon={<Search size={48} />}
           title="No se encontraron productos"
           description={
-            search || category
+            search || category || selectedTagIds.length > 0
               ? 'Intenta ajustar los filtros de búsqueda'
               : 'Comienza agregando tu primer producto'
           }
           action={
-            !search && !category ? (
+            !search && !category && selectedTagIds.length === 0 ? (
               <Button onClick={() => setShowForm(true)}>Crear Producto</Button>
             ) : undefined
           }

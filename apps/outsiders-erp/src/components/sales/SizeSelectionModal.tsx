@@ -83,6 +83,7 @@ export function SizeSelectionModal({
       id: selectedVariant.id,
       product_id: product.id,
       size: selectedVariant.size,
+      price_override: selectedVariant.price_override || null,
       created_at: selectedVariant.created_at || new Date().toISOString(),
     };
 

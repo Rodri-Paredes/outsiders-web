@@ -7,7 +7,8 @@ import {
   Wallet,
   BarChart3,
   X,
-  Globe
+  Globe,
+  Tag
 } from 'lucide-react'
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ const navigation = [
   // { name: 'Drops', to: '/drops', icon: Sparkles },
   { name: 'Stock', to: '/stock', icon: Database },
   { name: 'Caja', to: '/cash', icon: Wallet },
+  { name: 'Descuentos', to: '/discounts', icon: Tag },
   { name: 'CMS Web', to: '/cms', icon: Globe },
   { name: 'Reportes', to: '/reports', icon: BarChart3 },
 ]

@@ -4,13 +4,17 @@ export interface Product {
   description: string
   category?: string
   price: number
+  original_price?: number | null
+  discount_percentage?: number | null
   stock: number
   image_url?: string
+  images?: string[]
   drop_id?: string
   is_visible: boolean
   created_at?: string
   updated_at?: string
   variants?: ProductVariant[]
+  tags?: ProductTagAssignment[]
   hasStock?: boolean
 }
 
@@ -18,6 +22,7 @@ export interface ProductVariant {
   id: string
   product_id: string
   size: string
+  price_override?: number | null
   stock?: StockItem[]
   created_at?: string
 }
@@ -29,6 +34,22 @@ export interface StockItem {
   quantity: number
   created_at?: string
   updated_at?: string
+}
+
+export interface ProductTag {
+  id: string
+  name: string
+  category: string | null
+  tag_group: string
+  created_at?: string
+}
+
+export interface ProductTagAssignment {
+  id: string
+  product_id: string
+  tag_id: string
+  tag?: ProductTag
+  created_at?: string
 }
 
 export interface User {

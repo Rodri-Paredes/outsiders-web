@@ -27,6 +27,15 @@ export function ProductCard({
 
   const images = product.images || (product.image_url ? [product.image_url] : []);
 
+  // Discount calculations
+  const hasDiscount = product.original_price && product.discount_percentage && product.discount_percentage > 0;
+  const finalPrice = hasDiscount
+    ? product.original_price! * (1 - product.discount_percentage! / 100)
+    : product.price;
+
+  // Tags
+  const productTags = product.tags?.map(t => t.tag).filter(Boolean) || [];
+
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -98,12 +107,17 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Badge de oculto */}
-        {!product.is_visible && (
-          <div className="absolute top-2 right-2">
+        {/* Badges de estado */}
+        <div className="absolute top-2 right-2 flex flex-col gap-1">
+          {!product.is_visible && (
             <Badge variant="danger">Oculto</Badge>
-          </div>
-        )}
+          )}
+          {hasDiscount && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded shadow-sm">
+              -{product.discount_percentage}%
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Información */}
@@ -112,8 +126,35 @@ export function ProductCard({
 
         <div className="flex items-center justify-between mb-2">
           <Badge variant="info">{product.category}</Badge>
-          <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+          <div className="text-right">
+            {hasDiscount ? (
+              <div className="flex flex-col items-end">
+                <span className="text-xs text-gray-400 line-through">
+                  {formatPrice(product.original_price!)}
+                </span>
+                <span className="font-bold text-lg text-green-700">
+                  {formatPrice(Math.round(finalPrice * 100) / 100)}
+                </span>
+              </div>
+            ) : (
+              <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+            )}
+          </div>
         </div>
+
+        {/* Tags */}
+        {productTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {productTags.map(tag => (
+              <span
+                key={tag!.id}
+                className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full"
+              >
+                {tag!.name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {product.description && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2">

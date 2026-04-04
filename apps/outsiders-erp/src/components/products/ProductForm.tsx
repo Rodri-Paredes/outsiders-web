@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Trash2, Plus, Minus } from 'lucide-react';
-import { Product } from '../../lib/types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent } from 'lucide-react';
+import { Product, ProductTag } from '../../lib/types';
 import { productService } from '../../services/productService';
 import { stockService } from '../../services/stockService';
 import { useAuthStore } from '../../store/authStore';
-import { CATEGORIES, SIZES } from '../../lib/constants';
+import { CATEGORIES, SIZES, SIZES_BY_CATEGORY } from '../../lib/constants';
 import { Button } from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -20,6 +20,7 @@ interface SizeWithStock {
   size: string;
   variantId?: string;
   stock: number;
+  priceOverride?: number | null;
 }
 
 export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
@@ -30,6 +31,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     description: product?.description || '',
     category: product?.category || '',
     price: product?.price || 0,
+    original_price: product?.original_price || null as number | null,
+    discount_percentage: product?.discount_percentage || null as number | null,
     sku: (product as any)?.sku || '',
   });
 
@@ -39,11 +42,70 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Tags state
+  const [availableTags, setAvailableTags] = useState<ProductTag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [loadingTags, setLoadingTags] = useState(false);
+
+  // Computed: available sizes based on category
+  const categorySizes = useMemo(() => {
+    if (!formData.category) return SIZES as unknown as string[];
+    return (SIZES_BY_CATEGORY[formData.category] || SIZES) as unknown as string[];
+  }, [formData.category]);
+
+  // Computed: discount preview
+  const discountPreview = useMemo(() => {
+    if (formData.original_price && formData.discount_percentage && formData.discount_percentage > 0) {
+      const finalPrice = formData.original_price * (1 - formData.discount_percentage / 100);
+      return {
+        originalPrice: formData.original_price,
+        finalPrice: Math.round(finalPrice * 100) / 100,
+        percentage: formData.discount_percentage,
+        savings: Math.round((formData.original_price - finalPrice) * 100) / 100,
+      };
+    }
+    return null;
+  }, [formData.original_price, formData.discount_percentage]);
+
+  // Auto-calculate price when discount changes
+  useEffect(() => {
+    if (discountPreview) {
+      setFormData(prev => ({ ...prev, price: discountPreview.finalPrice }));
+    }
+  }, [discountPreview]);
+
+  // Load tags when category changes
+  useEffect(() => {
+    loadTags();
+  }, [formData.category]);
+
   useEffect(() => {
     if (product && activeBranch) {
       loadProductData();
     }
   }, [product, activeBranch]);
+
+  // When category changes, clear incompatible sizes
+  useEffect(() => {
+    if (formData.category) {
+      const validSizes = SIZES_BY_CATEGORY[formData.category] || SIZES;
+      setSizesWithStock(prev => 
+        prev.filter(s => (validSizes as readonly string[]).includes(s.size))
+      );
+    }
+  }, [formData.category]);
+
+  const loadTags = async () => {
+    try {
+      setLoadingTags(true);
+      const tags = await productService.getProductTags(formData.category || undefined);
+      setAvailableTags(tags);
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
 
   const loadProductData = async () => {
     if (!product || !activeBranch) return;
@@ -59,17 +121,24 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
             size: variant.size,
             variantId: variant.id,
             stock: stockData?.quantity || 0,
+            priceOverride: variant.price_override,
           });
         } catch {
           sizesData.push({
             size: variant.size,
             variantId: variant.id,
             stock: 0,
+            priceOverride: variant.price_override,
           });
         }
       }
       
       setSizesWithStock(sizesData);
+
+      // Load assigned tags
+      if (product.tags) {
+        setSelectedTagIds(product.tags.map(t => t.tag_id));
+      }
     } catch (error) {
       console.error('Error loading product data:', error);
     }
@@ -79,7 +148,9 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' ? parseFloat(value) || 0 : value,
+      [name]: name === 'price' || name === 'original_price' || name === 'discount_percentage' 
+        ? (value === '' ? null : parseFloat(value) || 0)
+        : value,
     }));
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -130,7 +201,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       return;
     }
 
-    setSizesWithStock(prev => [...prev, { size, stock: 0 }]);
+    setSizesWithStock(prev => [...prev, { size, stock: 0, priceOverride: null }]);
   };
 
   const removeSize = (size: string) => {
@@ -145,6 +216,28 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     );
   };
 
+  const updateSizePriceOverride = (size: string, priceOverride: number | null) => {
+    setSizesWithStock(prev =>
+      prev.map(s => s.size === size ? { ...s, priceOverride } : s)
+    );
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds(prev => 
+      prev.includes(tagId) 
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+  };
+
+  const clearDiscount = () => {
+    setFormData(prev => ({
+      ...prev,
+      original_price: null,
+      discount_percentage: null,
+    }));
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
@@ -156,12 +249,20 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       newErrors.category = 'La categoría es requerida';
     }
 
-    if (formData.price <= 0) {
+    if (formData.price <= 0 && !discountPreview) {
       newErrors.price = 'El precio debe ser mayor a 0';
     }
 
     if (sizesWithStock.length === 0) {
       newErrors.sizes = 'Agrega al menos una talla';
+    }
+
+    if (formData.original_price && formData.original_price > 0 && !formData.discount_percentage) {
+      newErrors.discount_percentage = 'Ingresa el porcentaje de descuento';
+    }
+
+    if (formData.discount_percentage && formData.discount_percentage > 0 && (!formData.original_price || formData.original_price <= 0)) {
+      newErrors.original_price = 'Ingresa el precio original';
     }
 
     setErrors(newErrors);
@@ -203,10 +304,12 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
 
       const productData = {
         ...formData,
-        sku: formData.sku?.trim() ? formData.sku.trim() : `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`, // Auto-generar si está vacío
+        sku: formData.sku?.trim() ? formData.sku.trim() : `SKU-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
         images: imageUrls.length > 0 ? imageUrls : null,
-        image_url: imageUrls[0] || null, // Mantener compatibilidad
+        image_url: imageUrls[0] || null,
         is_visible: true,
+        original_price: formData.original_price || null,
+        discount_percentage: formData.discount_percentage || null,
       };
 
       let savedProduct: Product;
@@ -222,7 +325,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         // Crear nuevas variantes y actualizar stock
         for (const sizeData of sizesWithStock) {
           if (!existingSizes.includes(sizeData.size)) {
-            const newVariant = await productService.createProductVariant(product.id, sizeData.size);
+            const newVariant = await productService.createProductVariant(product.id, sizeData.size, sizeData.priceOverride);
             
             if (sizeData.stock > 0) {
               await stockService.initializeStock(newVariant.id, activeBranch.id, sizeData.stock);
@@ -230,6 +333,10 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
           } else {
             const variant = existingVariants.find(v => v.size === sizeData.size);
             if (variant) {
+              // Update price_override if changed
+              if (variant.price_override !== sizeData.priceOverride) {
+                await productService.updateProductVariant(variant.id, { price_override: sizeData.priceOverride });
+              }
               try {
                 await stockService.setStock(variant.id, activeBranch.id, sizeData.stock);
               } catch (error) {
@@ -238,6 +345,9 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
             }
           }
         }
+
+        // Actualizar tags
+        await productService.setProductTags(product.id, selectedTagIds);
 
         Toast.success('Producto actualizado correctamente');
       } else {
@@ -251,11 +361,16 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         
         // Crear variantes y stock
         for (const sizeData of sizesWithStock) {
-          const newVariant = await productService.createProductVariant(savedProduct.id, sizeData.size);
+          const newVariant = await productService.createProductVariant(savedProduct.id, sizeData.size, sizeData.priceOverride);
           
           if (sizeData.stock > 0) {
             await stockService.initializeStock(newVariant.id, activeBranch.id, sizeData.stock);
           }
+        }
+
+        // Asignar tags
+        if (selectedTagIds.length > 0) {
+          await productService.setProductTags(savedProduct.id, selectedTagIds);
         }
 
         Toast.success('Producto creado correctamente');
@@ -279,7 +394,31 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     ...CATEGORIES.map((cat) => ({ value: cat, label: cat })),
   ];
 
-  const availableSizes = SIZES.filter(size => !sizesWithStock.some(s => s.size === size));
+  const availableSizesForCategory = categorySizes.filter(size => !sizesWithStock.some(s => s.size === size));
+
+  // Group tags by tag_group for display
+  const tagsByGroup = useMemo(() => {
+    const groups: Record<string, ProductTag[]> = {};
+    availableTags.forEach(tag => {
+      const group = tag.tag_group;
+      if (!groups[group]) groups[group] = [];
+      groups[group]!.push(tag);
+    });
+    return groups;
+  }, [availableTags]);
+
+  const tagGroupLabels: Record<string, string> = {
+    tipo: 'Tipo',
+    material: 'Material',
+    gramaje: 'Gramaje',
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-BO', {
+      style: 'currency',
+      currency: 'BOB',
+    }).format(price);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -312,7 +451,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 value={formData.name}
                 onChange={handleInputChange}
                 error={errors.name}
-                placeholder="Ej: Remera Oversized Black"
+                placeholder="Ej: Polera Oversized Black"
                 required
               />
 
@@ -322,7 +461,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 value={formData.sku}
                 onChange={handleInputChange}
                 error={errors.sku}
-                placeholder="Ej: OUT-REM-001"
+                placeholder="Ej: OUT-POL-001"
               />
 
               <div>
@@ -333,7 +472,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  rows={4}
+                  rows={3}
                   placeholder="Describe las características del producto..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none"
                 />
@@ -349,18 +488,140 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 required
               />
 
-              <Input
-                label="Precio"
-                name="price"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={handleInputChange}
-                error={errors.price}
-                placeholder="Monto en bolivianos"
-                required
-              />
+              {/* ===== SECCIÓN DE PRECIOS Y DESCUENTOS ===== */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Percent size={16} />
+                    Precio y Descuento
+                  </h4>
+                  {(formData.original_price || formData.discount_percentage) && (
+                    <button
+                      type="button"
+                      onClick={clearDiscount}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium"
+                    >
+                      Quitar descuento
+                    </button>
+                  )}
+                </div>
+
+                {/* Precio base (sin descuento) */}
+                {!formData.original_price && !formData.discount_percentage ? (
+                  <>
+                    <Input
+                      label="Precio de venta (Bs.)"
+                      name="price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price || ''}
+                      onChange={handleInputChange}
+                      error={errors.price}
+                      placeholder="Monto en bolivianos"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, original_price: prev.price || 0, discount_percentage: 0 }))}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                      <Percent size={14} />
+                      Agregar descuento
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Precio original (Bs.)</label>
+                        <input
+                          type="number"
+                          name="original_price"
+                          step="0.01"
+                          min="0"
+                          value={formData.original_price ?? ''}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.original_price ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="150.00"
+                        />
+                        {errors.original_price && <p className="text-xs text-red-500 mt-1">{errors.original_price}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Descuento (%)</label>
+                        <input
+                          type="number"
+                          name="discount_percentage"
+                          step="1"
+                          min="0"
+                          max="100"
+                          value={formData.discount_percentage ?? ''}
+                          onChange={handleInputChange}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.discount_percentage ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="20"
+                        />
+                        {errors.discount_percentage && <p className="text-xs text-red-500 mt-1">{errors.discount_percentage}</p>}
+                      </div>
+                    </div>
+
+                    {/* Discount Preview */}
+                    {discountPreview && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-gray-500 line-through">{formatPrice(discountPreview.originalPrice)}</p>
+                            <p className="text-lg font-bold text-green-700">{formatPrice(discountPreview.finalPrice)}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
+                              -{discountPreview.percentage}%
+                            </span>
+                            <p className="text-xs text-green-600 mt-1">Ahorras {formatPrice(discountPreview.savings)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* ===== SECCIÓN DE TAGS/ATRIBUTOS ===== */}
+              {formData.category && availableTags.length > 0 && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Tag size={16} />
+                    Atributos del Producto
+                  </h4>
+
+                  {Object.entries(tagsByGroup).map(([group, tags]) => (
+                    <div key={group}>
+                      <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase tracking-wider">
+                        {tagGroupLabels[group] || group}
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {tags.map(tag => (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.id)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              selectedTagIds.includes(tag.id)
+                                ? 'bg-black text-white shadow-md'
+                                : 'bg-white text-gray-700 border border-gray-300 hover:border-black hover:shadow-sm'
+                            }`}
+                          >
+                            {tag.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {loadingTags && (
+                    <p className="text-xs text-gray-400">Cargando atributos...</p>
+                  )}
+                </div>
+              )}
 
               {/* Imágenes */}
               <div>
@@ -436,47 +697,75 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
             {/* Columna Derecha - Tallas y Stock */}
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Tallas y Stock</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Tallas y Stock
+                  {formData.category && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      ({formData.category === 'Pantalones' || formData.category === 'Bermudas' || formData.category === 'Calzado' 
+                        ? 'Tallas numéricas' 
+                        : formData.category === 'Accesorios' || formData.category === 'Gorras'
+                          ? 'Talla única'
+                          : 'Tallas de ropa'})
+                    </span>
+                  )}
+                </h3>
                 
                 {/* Tallas Agregadas */}
                 <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto pr-2">
                   {sizesWithStock.map((sizeData) => (
                     <div key={sizeData.size} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                       <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-12 h-12 bg-black text-white font-bold rounded-lg">
+                        <span className="inline-flex items-center justify-center w-12 h-12 bg-black text-white font-bold rounded-lg text-sm">
                           {sizeData.size}
                         </span>
                       </div>
                       
-                      <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Stock inicial
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateSizeStock(sizeData.size, sizeData.stock - 1)}
-                            className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                            disabled={sizeData.stock <= 0}
-                          >
-                            <Minus size={16} />
-                          </button>
-                          
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Stock
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => updateSizeStock(sizeData.size, sizeData.stock - 1)}
+                              className="p-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                              disabled={sizeData.stock <= 0}
+                            >
+                              <Minus size={14} />
+                            </button>
+                            
+                            <input
+                              type="number"
+                              min="0"
+                              value={sizeData.stock || ''}
+                              onChange={(e) => updateSizeStock(sizeData.size, e.target.value === '' ? 0 : parseInt(e.target.value))}
+                              className="w-16 px-2 py-1 text-center border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            />
+                            
+                            <button
+                              type="button"
+                              onClick={() => updateSizeStock(sizeData.size, sizeData.stock + 1)}
+                              className="p-1 rounded bg-gray-200 hover:bg-gray-300"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Precio especial (Bs.)
+                          </label>
                           <input
                             type="number"
+                            step="0.01"
                             min="0"
-                            value={sizeData.stock || ''}
-                            onChange={(e) => updateSizeStock(sizeData.size, e.target.value === '' ? 0 : parseInt(e.target.value))}
-                            className="w-20 px-3 py-1 text-center border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                            value={sizeData.priceOverride ?? ''}
+                            onChange={(e) => updateSizePriceOverride(sizeData.size, e.target.value === '' ? null : parseFloat(e.target.value))}
+                            className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-black text-sm"
+                            placeholder="Usar base"
                           />
-                          
-                          <button
-                            type="button"
-                            onClick={() => updateSizeStock(sizeData.size, sizeData.stock + 1)}
-                            className="p-1 rounded-lg bg-gray-200 hover:bg-gray-300"
-                          >
-                            <Plus size={16} />
-                          </button>
                         </div>
                       </div>
                       
@@ -493,7 +782,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   {sizesWithStock.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <p>No hay tallas agregadas</p>
-                      <p className="text-sm">Agrega tallas disponibles abajo</p>
+                      <p className="text-sm">
+                        {formData.category 
+                          ? 'Agrega tallas disponibles abajo' 
+                          : 'Selecciona una categoría primero'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -503,32 +796,61 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 )}
 
                 {/* Agregar Tallas */}
-                {availableSizes.length > 0 && (
+                {formData.category && availableSizesForCategory.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Agregar Tallas
                     </label>
                     <div className="grid grid-cols-4 gap-2">
-                      {availableSizes.map((size) => (
+                      {availableSizesForCategory.map((size) => (
                         <button
                           key={size}
                           type="button"
                           onClick={() => addSize(size)}
-                          className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-black transition-all font-medium"
+                          className="px-3 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-black transition-all font-medium text-sm"
                         >
                           {size}
                         </button>
                       ))}
                     </div>
+
+                    {/* Add all sizes shortcut */}
+                    {availableSizesForCategory.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          availableSizesForCategory.forEach(size => {
+                            if (!sizesWithStock.some(s => s.size === size)) {
+                              setSizesWithStock(prev => [...prev, { size, stock: 0, priceOverride: null }]);
+                            }
+                          });
+                        }}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        + Agregar todas las tallas
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {!formData.category && (
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Selecciona una categoría para ver las tallas disponibles
+                    </p>
                   </div>
                 )}
 
                 {/* Info */}
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    💡 <strong>Tip:</strong> El stock se configura para la sucursal actual ({activeBranch?.name || 'seleccionada'}). 
-                    Puedes ajustarlo después desde el módulo de Stock.
+                    💡 <strong>Tips:</strong>
                   </p>
+                  <ul className="text-sm text-blue-700 mt-1 space-y-1 list-disc list-inside">
+                    <li>El stock se configura para la sucursal actual ({activeBranch?.name || 'seleccionada'}).</li>
+                    <li>"Precio especial" permite un precio distinto por talla (deja vacío para usar el precio base).</li>
+                    <li>Puedes ajustar stock después desde el módulo de Stock.</li>
+                  </ul>
                 </div>
               </div>
             </div>

@@ -1,224 +1,208 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useRef } from 'react'
+import { cmsService } from '@/services/cmsService'
 import toast from 'react-hot-toast'
-import { Loader2, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
-import ImageUploader from './ImageUploader'
+import { Loader2, Upload, X } from 'lucide-react'
+
+interface BannerConfig {
+  image_url: string
+  title: string
+  subtitle: string
+  cta_text: string
+  cta_link: string
+  is_active: boolean
+}
+
+const DEFAULT: BannerConfig = {
+  image_url: '',
+  title: '',
+  subtitle: '',
+  cta_text: 'Ver Tienda',
+  cta_link: '/shop',
+  is_active: true,
+}
 
 export default function BannersEditor() {
-  const [banners, setBanners] = useState<any[]>([])
+  const [config, setConfig] = useState<BannerConfig>(DEFAULT)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    loadBanners()
+    loadConfig()
   }, [])
 
-  const loadBanners = async () => {
+  const loadConfig = async () => {
     try {
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .order('position', { ascending: true })
-
-      if (error) throw error
-      setBanners(data || [])
-    } catch (error: any) {
-      toast.error('Error al cargar banners: ' + error.message)
+      const data = await cmsService.getConfig('home_banner')
+      if (data) setConfig({ ...DEFAULT, ...data })
+    } catch (err) {
+      toast.error('Error al cargar el banner')
     } finally {
       setLoading(false)
     }
   }
 
-  const addBanner = () => {
-    const newBanner = {
-      id: `temp-${Date.now()}`,
-      title: 'Nuevo Banner',
-      image_url: '',
-      link: '',
-      is_active: true,
-      position: banners.length,
-      isNew: true
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await cmsService.uploadImage(file, 'banners')
+      setConfig(c => ({ ...c, image_url: url }))
+      toast.success('Imagen subida')
+    } catch (err: any) {
+      toast.error('Error al subir imagen: ' + err.message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
     }
-    setBanners([...banners, newBanner])
-  }
-
-  const removeBanner = async (id: string, index: number) => {
-    if (!id.toString().startsWith('temp-')) {
-      const confirmMsg = "Eliminar este banner permanentemente?"
-      if (!window.confirm(confirmMsg)) return
-
-      try {
-        const { error } = await supabase.from('banners').delete().eq('id', id)
-        if (error) throw error
-        toast.success('Eliminado')
-      } catch (error: any) {
-        toast.error('Error al eliminar: ' + error.message)
-        return
-      }
-    }
-    
-    setBanners(b => b.filter((_, i) => i !== index))
-  }
-
-  const moveBanner = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return
-    if (direction === 'down' && index === banners.length - 1) return
-
-    const newBanners = [...banners]
-    const swapIndex = direction === 'up' ? index - 1 : index + 1
-    
-    const temp = newBanners[index]
-    newBanners[index] = newBanners[swapIndex]
-    newBanners[swapIndex] = temp
-
-    // Update positions
-    newBanners.forEach((b, i) => b.position = i)
-    setBanners(newBanners)
-  }
-
-  const updateBanner = (index: number, field: string, value: any) => {
-    const newBanners = [...banners]
-    newBanners[index] = { ...newBanners[index], [field]: value }
-    setBanners(newBanners)
   }
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      for (const banner of banners) {
-        const payload = {
-          title: banner.title,
-          image_url: banner.image_url,
-          link: banner.link,
-          is_active: banner.is_active,
-          position: banner.position,
-        }
-
-        if (banner.isNew) {
-          const { error } = await supabase.from('banners').insert(payload)
-          if (error) throw error
-        } else {
-          const { error } = await supabase.from('banners').update(payload).eq('id', banner.id)
-          if (error) throw error
-        }
-      }
-      toast.success('Banners guardados')
-      loadBanners() // Recargar para obtener IDs reales
-    } catch (error: any) {
-      toast.error('Error al guardar: ' + error.message)
+      await cmsService.setConfig('home_banner', config)
+      toast.success('Banner guardado ✓')
+    } catch (err: any) {
+      toast.error('Error al guardar: ' + err.message)
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-gray-500" /></div>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-4xl space-y-6">
-      
-      <div className="flex justify-between items-center">
-        <p className="text-gray-600">Administra los banners promocionales del frontend.</p>
-        <button
-          onClick={addBanner}
-          className="bg-gray-100 text-gray-900 border border-gray-200 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Agregar Banner
-        </button>
+    <div className="max-w-4xl space-y-8">
+      <p className="text-sm text-gray-500">
+        Configura el banner principal que aparece en la página de inicio de la tienda.
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Image Upload */}
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-gray-800">Imagen del Banner</label>
+          <div
+            className="relative aspect-video bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer hover:border-gray-400 transition-colors group"
+            onClick={() => fileRef.current?.click()}
+          >
+            {config.image_url ? (
+              <>
+                <img src={config.image_url} alt="Banner preview" className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <Upload className="w-8 h-8 mx-auto mb-2" />
+                    <p className="text-sm font-medium">Cambiar imagen</p>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setConfig(c => ({ ...c, image_url: '' })) }}
+                  className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-black rounded-full flex items-center justify-center text-white z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                {uploading ? (
+                  <Loader2 className="w-10 h-10 animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-10 h-10 mb-3" />
+                    <p className="text-sm font-medium">Haz clic para subir imagen</p>
+                    <p className="text-xs mt-1 text-gray-400">JPG, PNG, WebP • Recomendado: 1920×800px</p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        </div>
+
+        {/* Text & Link Fields */}
+        <div className="space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Título Principal</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+              placeholder="ej: Nueva Colección"
+              value={config.title}
+              onChange={e => setConfig(c => ({ ...c, title: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-1.5">Subtítulo (opcional)</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+              placeholder="ej: Fall / Winter 2025"
+              value={config.subtitle}
+              onChange={e => setConfig(c => ({ ...c, subtitle: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Texto del Botón CTA</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+                placeholder="ej: Ver Tienda"
+                value={config.cta_text}
+                onChange={e => setConfig(c => ({ ...c, cta_text: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-1.5">Link del Botón</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+                placeholder="ej: /shop"
+                value={config.cta_link}
+                onChange={e => setConfig(c => ({ ...c, cta_link: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+            <input
+              type="checkbox"
+              id="banner-active"
+              checked={config.is_active}
+              onChange={e => setConfig(c => ({ ...c, is_active: e.target.checked }))}
+              className="w-4 h-4 rounded accent-black"
+            />
+            <label htmlFor="banner-active" className="text-sm font-medium text-gray-700">
+              Banner activo (visible en la tienda)
+            </label>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {banners.map((banner, index) => (
-          <div key={banner.id} className="bg-gray-50 p-6 rounded-lg border border-gray-200 relative flex gap-6">
-            
-            <div className="flex flex-col gap-2 justify-center border-r pr-4">
-               <button 
-                 onClick={() => moveBanner(index, 'up')}
-                 disabled={index === 0}
-                 className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
-               >
-                 <ArrowUp className="w-5 h-5" />
-               </button>
-               <span className="text-center font-medium text-gray-500">{index + 1}</span>
-               <button 
-                 onClick={() => moveBanner(index, 'down')}
-                 disabled={index === banners.length - 1}
-                 className="p-1 hover:bg-gray-200 rounded disabled:opacity-30"
-               >
-                 <ArrowDown className="w-5 h-5" />
-               </button>
-            </div>
+      {/* Live Preview Hint */}
+      {config.image_url && (
+        <div className="flex items-center gap-2 text-xs text-gray-500 bg-green-50 border border-green-100 rounded-lg px-4 py-3">
+          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          Los cambios se reflejan en la tienda dentro de ~60 segundos al guardar.
+        </div>
+      )}
 
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mx-1">Título Interno</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 border rounded-lg"
-                    value={banner.title}
-                    onChange={(e) => updateBanner(index, 'title', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mx-1">Enlace HTML (Href)</label>
-                  <input 
-                    type="text" 
-                    className="w-full px-3 py-2 border rounded-lg"
-                    value={banner.link || ''}
-                    placeholder="/shop, /categoria/camisetas"
-                    onChange={(e) => updateBanner(index, 'link', e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-2 mt-4">
-                  <input 
-                    type="checkbox" 
-                    id={`active-${banner.id}`}
-                    checked={banner.is_active}
-                    onChange={(e) => updateBanner(index, 'is_active', e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <label htmlFor={`active-${banner.id}`} className="text-sm font-medium text-gray-700">Activo (Visible en frontend)</label>
-                </div>
-              </div>
-
-              <div>
-                 <label className="block text-sm font-medium text-gray-700 mx-1 mb-2">Imagen Promocional (Desktop)</label>
-                 <ImageUploader 
-                   value={banner.image_url} 
-                   onChange={(url) => updateBanner(index, 'image_url', url)}
-                 />
-              </div>
-
-            </div>
-
-            <button 
-              onClick={() => removeBanner(banner.id, index)}
-              className="absolute top-4 right-4 p-2 text-red-500 hover:bg-red-50 rounded-lg"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          </div>
-        ))}
-
-        {banners.length === 0 && (
-          <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-xl text-gray-500">
-            No hay banners configurados. Crea uno nuevo.
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end border-t pt-4">
+      <div className="flex justify-end border-t pt-5">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
+          className="bg-black text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2 transition-colors"
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          Guardar Cambios
+          Guardar Banner
         </button>
       </div>
-
     </div>
   )
 }

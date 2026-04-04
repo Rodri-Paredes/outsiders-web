@@ -82,14 +82,17 @@ export default function Navbar() {
                         Ver Todo
                       </Link>
                       <div className="h-px w-full bg-gray-100 my-1"></div>
-                      <Link href="/shop?category=Camisetas" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
-                        Camisetas
+                      <Link href="/shop?category=Poleras" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
+                        Poleras
                       </Link>
                       <Link href="/shop?category=Sudaderas" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
                         Sudaderas & Hoodies
                       </Link>
                       <Link href="/shop?category=Pantalones" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
                         Pantalones
+                      </Link>
+                      <Link href="/shop?category=Bermudas" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
+                        Bermudas
                       </Link>
                       <div className="h-px w-full bg-gray-100 my-1"></div>
                       <Link href="/shop?category=Accesorios" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">

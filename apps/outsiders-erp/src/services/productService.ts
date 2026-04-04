@@ -1,6 +1,36 @@
 import { supabase } from '../lib/supabase';
-import type { Product, ProductVariant, ProductWithVariants } from '../lib/types';
+import type { Product, ProductVariant, ProductWithVariants, ProductTag } from '../lib/types';
 import { compressImage } from '../lib/imageCompression';
+
+// Check if tags tables exist (set once on first query)
+let tagsAvailable: boolean | null = null;
+
+async function checkTagsAvailable(): Promise<boolean> {
+  if (tagsAvailable !== null) return tagsAvailable;
+  try {
+    const { error } = await supabase.from('product_tags').select('id').limit(1);
+    tagsAvailable = !error;
+    return tagsAvailable;
+  } catch {
+    tagsAvailable = false;
+    return false;
+  }
+}
+
+// Build the select query string depending on whether tags tables exist
+function getProductSelectQuery(includeTags: boolean): string {
+  if (includeTags) {
+    return `
+      *,
+      tags:product_tag_assignments(
+        id,
+        tag_id,
+        tag:product_tags(*)
+      )
+    `;
+  }
+  return '*';
+}
 
 export const productService = {
   supabase, // Exportar supabase para usar en otros lugares
@@ -12,11 +42,16 @@ export const productService = {
     category?: string;
     search?: string;
     includeHidden?: boolean;
+    tag_ids?: string[];
+    hasDiscount?: boolean;
   }) {
     try {
+      const hasTags = await checkTagsAvailable();
+      const selectQuery = getProductSelectQuery(hasTags);
+
       let query = supabase
         .from('products')
-        .select('*')
+        .select(selectQuery)
         .order('created_at', { ascending: false });
 
       if (filters?.category) {
@@ -32,10 +67,25 @@ export const productService = {
         query = query.eq('is_visible', true);
       }
 
+      if (filters?.hasDiscount) {
+        query = query.not('discount_percentage', 'is', null).gt('discount_percentage', 0);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as Product[];
+
+      let products = data as unknown as Product[];
+
+      // Filtro por tags (se hace client-side porque Supabase no soporta filtros en relaciones anidadas fácilmente)
+      if (hasTags && filters?.tag_ids && filters.tag_ids.length > 0) {
+        products = products.filter(product => {
+          const productTagIds = product.tags?.map(t => t.tag_id) || [];
+          return filters.tag_ids!.every(tagId => productTagIds.includes(tagId));
+        });
+      }
+
+      return products;
     } catch (error) {
       console.error('Error fetching products:', error);
       throw error;
@@ -66,14 +116,17 @@ export const productService = {
    */
   async getProductById(id: string) {
     try {
+      const hasTags = await checkTagsAvailable();
+      const selectQuery = getProductSelectQuery(hasTags);
+
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(selectQuery)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      return data as Product;
+      return data as unknown as Product;
     } catch (error) {
       console.error('Error fetching product:', error);
       throw error;
@@ -85,17 +138,29 @@ export const productService = {
    */
   async getProductWithVariants(id: string): Promise<ProductWithVariants> {
     try {
+      const hasTags = await checkTagsAvailable();
+      
+      let selectQuery = '*, variants:product_variants(*)';
+      if (hasTags) {
+        selectQuery = `
+          *,
+          variants:product_variants(*),
+          tags:product_tag_assignments(
+            id,
+            tag_id,
+            tag:product_tags(*)
+          )
+        `;
+      }
+
       const { data, error } = await supabase
         .from('products')
-        .select(`
-          *,
-          variants:product_variants(*)
-        `)
+        .select(selectQuery)
         .eq('id', id)
         .single();
 
       if (error) throw error;
-      return data as ProductWithVariants;
+      return data as unknown as ProductWithVariants;
     } catch (error) {
       console.error('Error fetching product with variants:', error);
       throw error;
@@ -110,14 +175,38 @@ export const productService = {
     description?: string;
     category: string;
     price: number;
+    original_price?: number | null;
+    discount_percentage?: number | null;
     image_url?: string;
     images?: string[];
     drop_id?: string;
   }) {
     try {
+      // Clean up: only send fields that the DB actually has
+      const insertData: Record<string, any> = {
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        is_visible: true,
+      };
+
+      if (product.description) insertData.description = product.description;
+      if (product.image_url) insertData.image_url = product.image_url;
+      if (product.images) insertData.images = product.images;
+      if (product.drop_id) insertData.drop_id = product.drop_id;
+      if ((product as any).sku) insertData.sku = (product as any).sku;
+
+      // Only include discount fields if they have values
+      if (product.original_price != null && product.original_price > 0) {
+        insertData.original_price = product.original_price;
+      }
+      if (product.discount_percentage != null && product.discount_percentage > 0) {
+        insertData.discount_percentage = product.discount_percentage;
+      }
+
       const { data, error } = await supabase
         .from('products')
-        .insert([product])
+        .insert([insertData])
         .select()
         .single();
 
@@ -134,9 +223,24 @@ export const productService = {
    */
   async updateProduct(id: string, updates: Partial<Product>) {
     try {
+      // Remove relational/computed fields that are NOT columns
+      const { tags, ...rest } = updates as any;
+      
+      // Clean up undefined values
+      const cleanUpdates: Record<string, any> = {};
+      for (const [key, value] of Object.entries(rest)) {
+        if (value !== undefined) {
+          cleanUpdates[key] = value;
+        }
+      }
+      
+      // Remove fields that don't exist as columns
+      delete cleanUpdates.id;
+      delete cleanUpdates.created_at;
+
       const { data, error } = await supabase
         .from('products')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id)
         .select()
         .single();
@@ -250,11 +354,20 @@ export const productService = {
   /**
    * Crear variante de producto (talla)
    */
-  async createProductVariant(productId: string, size: string) {
+  async createProductVariant(productId: string, size: string, priceOverride?: number | null) {
     try {
+      const insertData: Record<string, any> = {
+        product_id: productId,
+        size,
+      };
+      // Only include price_override if it has a value
+      if (priceOverride != null && priceOverride > 0) {
+        insertData.price_override = priceOverride;
+      }
+
       const { data, error } = await supabase
         .from('product_variants')
-        .insert([{ product_id: productId, size }])
+        .insert([insertData])
         .select()
         .single();
 
@@ -262,6 +375,26 @@ export const productService = {
       return data as ProductVariant;
     } catch (error) {
       console.error('Error creating product variant:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualizar variante de producto (price_override)
+   */
+  async updateProductVariant(variantId: string, updates: { price_override?: number | null }) {
+    try {
+      const { data, error } = await supabase
+        .from('product_variants')
+        .update(updates)
+        .eq('id', variantId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as ProductVariant;
+    } catch (error) {
+      console.error('Error updating product variant:', error);
       throw error;
     }
   },
@@ -297,6 +430,113 @@ export const productService = {
       return data as ProductVariant[];
     } catch (error) {
       console.error('Error fetching product variants:', error);
+      throw error;
+    }
+  },
+
+  // ==================== TAGS ====================
+
+  /**
+   * Obtener todos los tags disponibles, opcionalmente filtrados por categoría
+   */
+  async getProductTags(category?: string): Promise<ProductTag[]> {
+    try {
+      const hasTags = await checkTagsAvailable();
+      if (!hasTags) return [];
+
+      let query = supabase
+        .from('product_tags')
+        .select('*')
+        .order('tag_group', { ascending: true })
+        .order('name', { ascending: true });
+
+      if (category) {
+        // Tags de esa categoría + tags globales (category IS NULL)
+        query = query.or(`category.eq.${category},category.is.null`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as ProductTag[];
+    } catch (error) {
+      console.error('Error fetching product tags:', error);
+      return []; // Graceful fallback
+    }
+  },
+
+  /**
+   * Asignar tags a un producto (reemplaza todos los tags existentes)
+   */
+  async setProductTags(productId: string, tagIds: string[]) {
+    try {
+      const hasTags = await checkTagsAvailable();
+      if (!hasTags) return; // Silently skip if tags not available
+
+      // Primero eliminar todos los tags existentes
+      const { error: deleteError } = await supabase
+        .from('product_tag_assignments')
+        .delete()
+        .eq('product_id', productId);
+
+      if (deleteError) throw deleteError;
+
+      // Luego insertar los nuevos
+      if (tagIds.length > 0) {
+        const assignments = tagIds.map(tag_id => ({
+          product_id: productId,
+          tag_id,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('product_tag_assignments')
+          .insert(assignments);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Error setting product tags:', error);
+      // Don't throw — tags are non-critical
+    }
+  },
+
+  /**
+   * Crear un nuevo tag
+   */
+  async createTag(tag: { name: string; category?: string | null; tag_group: string }): Promise<ProductTag | null> {
+    try {
+      const hasTags = await checkTagsAvailable();
+      if (!hasTags) return null;
+
+      const { data, error } = await supabase
+        .from('product_tags')
+        .insert([tag])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as ProductTag;
+    } catch (error) {
+      console.error('Error creating tag:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Eliminar un tag
+   */
+  async deleteTag(tagId: string) {
+    try {
+      const hasTags = await checkTagsAvailable();
+      if (!hasTags) return;
+
+      const { error } = await supabase
+        .from('product_tags')
+        .delete()
+        .eq('id', tagId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting tag:', error);
       throw error;
     }
   },

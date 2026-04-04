@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -8,7 +8,7 @@ import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
-import { Search } from 'lucide-react';
+import { Search, Filter, X, Check } from 'lucide-react';
 
 // Inner component handling the logic
 function ShopContent() {
@@ -19,8 +19,12 @@ function ShopContent() {
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [mounted, setMounted] = useState(false);
+  
+  // Tag filters state
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const categories = ['all', 'Camisetas', 'Sudaderas', 'Pantalones', 'Accesorios', 'Calzado', 'Gorras', 'Otros'];
+  const categories = ['all', 'Poleras', 'Soleras', 'Sudaderas', 'Pantalones', 'Bermudas', 'Accesorios', 'Calzado', 'Gorras', 'Otros'];
 
   useEffect(() => {
     setMounted(true);
@@ -38,6 +42,11 @@ function ShopContent() {
     }
   }, [searchParams]);
 
+  // Reset tags when category changes to avoid dead ends
+  useEffect(() => {
+    setSelectedTags([]);
+  }, [selectedCategory]);
+
   const loadProducts = async () => {
     try {
       setLoading(true);
@@ -51,11 +60,64 @@ function ShopContent() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
+  // Derive dynamic filters from products available in the selected category
+  const availableTagsMap = useMemo(() => {
+    const map = new Map<string, { name: string; group: string }>();
+    products.forEach((p) => {
+      // Solo mostramos tags relativos a la categoría que apretaste
+      // Si la categoría es 'all', no extraemos atributos para no saturar 
+      // y mantener el sub-filtro solo cuando entras a algo específico.
+      if (selectedCategory !== 'all' && p.category === selectedCategory) {
+        if (p.tags) {
+          p.tags.forEach((assignment) => {
+            const t = assignment.tag;
+            if (t) {
+              map.set(t.name, { name: t.name, group: t.tag_group || 'Atributos' });
+            }
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [products, selectedCategory]);
+
+  const groupedTags = useMemo(() => {
+    const groups: Record<string, string[]> = {};
+    availableTagsMap.forEach((t) => {
+      if (!groups[t.group]) groups[t.group] = [];
+      groups[t.group].push(t.name);
+    });
+    
+    // Sort array inside groups for consistency
+    Object.keys(groups).forEach(key => {
+      groups[key].sort();
+    });
+    
+    return groups;
+  }, [availableTagsMap]);
+
+  const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    
+    const matchesTags =
+      selectedTags.length === 0 ||
+      selectedTags.some((tagName) => 
+        product.tags?.some((t) => t.tag?.name === tagName)
+      );
+
+    return matchesSearch && matchesCategory && matchesTags;
   });
+
+  const toggleTag = (tagName: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
+    );
+  };
+
+  const clearFilters = () => {
+    setSelectedTags([]);
+  };
 
   // Prevent hydration errors by rendering only on client
   if (!mounted) {
@@ -63,9 +125,7 @@ function ShopContent() {
       <div className="min-h-screen bg-dark-bg pt-32 pb-20">
         <div className="container-custom">
           <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-7xl font-light text-white tracking-tighter mb-6">
-              Shop
-            </h1>
+            <h1 className="text-5xl md:text-7xl font-light text-white tracking-tighter mb-6">Shop</h1>
             <div className="h-px w-24 bg-white/30 mx-auto mb-6" />
             <p className="text-gray-light text-xs tracking-[0.3em] uppercase">Cargando...</p>
           </div>
@@ -74,23 +134,91 @@ function ShopContent() {
     );
   }
 
+  const hasAnyFilters = Object.keys(groupedTags).length > 0;
+
   return (
     <div className="min-h-screen bg-white pt-36 lg:pt-40 pb-20">
+      {/* Mobile Filters Drawer - Keeps Mobile tidy */}
+      <div 
+        className={`fixed inset-0 z-[100] transition-opacity duration-300 lg:hidden ${
+          showMobileFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMobileFilters(false)} />
+        <div 
+          className={`absolute top-0 right-0 h-full w-[85%] max-w-sm bg-white shadow-2xl transition-transform duration-300 transform ${
+            showMobileFilters ? 'translate-x-0' : 'translate-x-full'
+          } flex flex-col`}
+        >
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-black">Filtros - {selectedCategory !== 'all' ? selectedCategory : 'Tienda'}</h2>
+            <button onClick={() => setShowMobileFilters(false)} className="p-2 -mr-2 text-gray-400 hover:text-black transition-colors">
+              <X size={20} strokeWidth={1.5} />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {hasAnyFilters ? (
+              Object.entries(groupedTags).map(([group, tags]) => (
+                <div key={`mobile-group-${group}`}>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">{group}</h4>
+                  <div className="space-y-3">
+                    {tags.map((tag) => (
+                      <label key={`mobile-${tag}`} className="flex items-center gap-4 cursor-pointer group">
+                        <div className={`w-5 h-5 border flex items-center justify-center transition-colors ${
+                          selectedTags.includes(tag) ? 'bg-black border-black text-white' : 'border-gray-300 group-hover:border-black text-transparent'
+                        }`}>
+                          <Check size={14} strokeWidth={3} className="shrink-0" />
+                        </div>
+                        <span className={`text-sm tracking-wide ${selectedTags.includes(tag) ? 'text-black font-medium' : 'text-gray-600'}`}>
+                          {tag}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 italic">Entra a una categoría principal para ver sus filtros aplicables.</p>
+            )}
+          </div>
+          
+          <div className="p-6 border-t border-gray-100 space-y-3 bg-gray-50/50">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">{filteredProducts.length} Productos</span>
+              {selectedTags.length > 0 && (
+                <button onClick={clearFilters} className="text-xs font-medium text-gray-500 underline underline-offset-4 hover:text-black">
+                  Limpiar Filtros
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => setShowMobileFilters(false)}
+              className="w-full py-4 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-900 transition-colors"
+            >
+              Ver Resultados
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="container-custom">
-        <div className="flex flex-col gap-8">
-          {/* Horizontal Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-200 pb-6 w-full">
-            {/* Categories */}
+        <div className="flex flex-col gap-6">
+          
+          {/* Top Horizontal Bar (Categories & Search & Mobile Toggle) */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-200 pb-5 w-full relative z-10">
+            {/* Primary Categories */}
             <div className="flex-1 min-w-0 w-full">
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full">
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full relative">
                 {categories.map((category) => (
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === category
-                      ? 'text-black border-b-2 border-black'
-                      : 'text-gray-400 hover:text-black'
-                      }`}
+                    className={`px-4 py-2 text-[11px] md:text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+                      selectedCategory === category
+                        ? 'text-black border-b-2 border-black'
+                        : 'text-gray-400 hover:text-black'
+                    }`}
                   >
                     {category === 'all' ? 'Todos' : category}
                   </button>
@@ -98,33 +226,86 @@ function ShopContent() {
               </div>
             </div>
 
-            {/* Search */}
-            <div className="w-full md:w-80 flex-shrink-0">
+            {/* Search + Mobile Filters Button */}
+            <div className="w-full md:w-64 flex-shrink-0 flex gap-4 items-center">
               <div className="relative w-full">
                 <input
                   type="text"
                   placeholder="Buscar productos..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-4 pr-10 py-3 bg-transparent border-b border-gray-200 text-sm font-medium text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors"
+                  className="w-full pl-0 pr-8 py-2 bg-transparent border-b border-gray-200 text-sm font-medium text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors">
-                  <Search size={18} strokeWidth={2} />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search size={16} strokeWidth={2} />
                 </div>
               </div>
+              
+              {/* Mobile filter toggle */}
+              <button 
+                onClick={() => setShowMobileFilters(true)}
+                className="lg:hidden flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-colors hover:bg-gray-100"
+              >
+                <Filter size={14} />
+                <span>Filtrar</span>
+                {selectedTags.length > 0 && (
+                  <span className="w-4 h-4 flex items-center justify-center bg-black text-white text-[9px] rounded-full ml-1">
+                    {selectedTags.length}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1 w-full">
+          {/* Sub-Filters: Desktop Only Inline display */}
+          {/* We only show subfilters if a specific category is chosen and it has unique tags */}
+          {selectedCategory !== 'all' && hasAnyFilters && (
+            <div className="hidden lg:flex flex-wrap items-center gap-x-8 gap-y-4 pt-1 pb-6 w-full animate-in fade-in slide-in-from-top-2 duration-300">
+              {Object.entries(groupedTags).map(([group, tags]) => (
+                <div key={`inline-group-${group}`} className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{group}:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => {
+                      const isActive = selectedTags.includes(tag);
+                      return (
+                        <button
+                          key={`inline-${tag}`}
+                          onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 border ${
+                            isActive
+                              ? 'bg-black text-white border-black'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-black hover:text-black'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="ml-auto text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-black border-b border-transparent hover:border-black transition-colors"
+                >
+                  Limpiar Filtros
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <div className="flex flex-col w-full pt-4 md:pt-0">
             {/* Loading State */}
             {loading && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-6 md:gap-y-12">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <div key={i} className="space-y-4">
-                    <div className="aspect-square bg-gray-100 animate-pulse" />
-                    <div className="h-4 bg-gray-100 animate-pulse w-3/4" />
-                    <div className="h-4 bg-gray-100 animate-pulse w-1/2" />
+                    <div className="aspect-[3/4] md:aspect-square bg-gray-50 animate-pulse border border-gray-100" />
+                    <div className="h-4 bg-gray-100 animate-pulse w-2/3" />
+                    <div className="h-4 bg-gray-100 animate-pulse w-1/3" />
                   </div>
                 ))}
               </div>
@@ -132,15 +313,20 @@ function ShopContent() {
 
             {/* No Results */}
             {!loading && filteredProducts.length === 0 && (
-              <div className="text-center py-20">
+              <div className="text-center py-24 bg-gray-50/50 border border-gray-50 mt-4 rounded-xl">
                 <p className="text-gray-500 text-lg mb-2">No se encontraron productos</p>
-                <p className="text-gray-400 text-sm">Intenta con otros términos de búsqueda</p>
+                <p className="text-gray-400 text-sm">Intenta limpiando los filtros o usando otras palabras clave.</p>
+                {selectedTags.length > 0 && (
+                  <button onClick={clearFilters} className="mt-8 px-6 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-widest hover:bg-gray-900 transition-colors">
+                    Limpiar Filtros
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Products Grid */}
+            {/* Products List */}
             {!loading && filteredProducts.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-6 md:gap-y-12 pb-12">
                 {filteredProducts.map((product) => {
                   const hasStock = (product as any).hasStock;
                   const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -153,14 +339,14 @@ function ShopContent() {
                       prefetch={true}
                     >
                       {/* Image */}
-                      <div className="aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100">
+                      <div className="aspect-[3/4] md:aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100 flex items-center justify-center">
                         {product.image_url || (product as any).images?.[0] ? (
                           <Image
                             src={(product as any).images?.[0] || product.image_url || ''}
                             alt={product.name}
                             fill
                             sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
                             loading="lazy"
                             quality={75}
                           />
@@ -170,32 +356,52 @@ function ShopContent() {
                           </div>
                         )}
 
+                        {/* Discount Badge */}
+                        {product.original_price && product.discount_percentage && product.discount_percentage > 0 && (
+                          <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10">
+                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-black text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+                              -{product.discount_percentage}%
+                            </span>
+                          </div>
+                        )}
+
                         {/* Stock Badge */}
                         {!hasStock && (
-                          <div className="absolute top-3 right-3">
-                            <span className="inline-block px-3 py-1 bg-red-500 text-white text-xs font-bold uppercase tracking-widest">
+                          <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10">
+                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-red-600 text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
                               SOLD OUT
                             </span>
                           </div>
                         )}
 
-                        {/* Quick View on Hover */}
+                        {/* Quick View Overlay (Desktop only) */}
                         {hasStock && (
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
+                          <div className="hidden md:block absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
                         )}
                       </div>
 
                       {/* Product Info */}
-                      <div className="space-y-2">
-                        <h3 className="text-sm font-semibold text-black uppercase tracking-wide line-clamp-2 group-hover:text-gray-600 transition-colors">
+                      <div className="space-y-1.5 px-1 flex flex-col items-start text-left">
+                        <h3 className="text-[11px] md:text-[13px] font-bold text-gray-900 uppercase tracking-wide line-clamp-2 transition-colors">
                           {product.name}
                         </h3>
-                        <p className="text-lg font-bold text-black">
-                          ${product.price?.toFixed(2) || '0.00'}
-                        </p>
+                        {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-[10px] md:text-xs text-gray-400 line-through font-medium">
+                              Bs. {Number(product.original_price).toFixed(2)}
+                            </p>
+                            <p className="text-[13px] md:text-sm font-bold text-black">
+                              Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-[13px] md:text-sm font-bold text-black">
+                            Bs. {product.price?.toFixed(2) || '0.00'}
+                          </p>
+                        )}
                       </div>
                     </Link>
-                  )
+                  );
                 })}
               </div>
             )}

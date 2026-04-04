@@ -1,0 +1,29 @@
+
+> outsiders-erp@1.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 1595 modules transformed.
+x Build failed in 4.14s
+error during build:
+src/pages/DiscountsPage.tsx (6:9): "Card" is not exported by "src/components/ui/Card.tsx", imported by "src/pages/DiscountsPage.tsx".
+file: /home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/src/pages/DiscountsPage.tsx:6:9
+
+4: import { Discount } from '../lib/types';
+5: import { Button } from '../components/ui/Button';
+6: import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+            ^
+7: import Badge from '../components/ui/Badge';
+8: import EmptyState from '../components/ui/EmptyState';
+
+    at getRollupError (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:16956:16)
+    at Module.traceVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:17412:29)
+    at ModuleScope.findVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:15076:39)
+    at FunctionScope.findVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at FunctionBodyScope.findVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at ReturnValueScope.findVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at FunctionBodyScope.findVariable (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at Identifier.bind (file:///home/rodriparedes/personal/clientes/outsiders-web/apps/outsiders-erp/node_modules/rollup/dist/es/shared/node-entry.js:5423:40)

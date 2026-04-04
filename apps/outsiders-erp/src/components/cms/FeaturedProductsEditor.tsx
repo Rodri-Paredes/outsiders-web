@@ -1,291 +1,292 @@
 import { useState, useEffect } from 'react'
+import { cmsService } from '@/services/cmsService'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
-import { Loader2, Search, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { Loader2, Search, Trash2, ArrowUp, ArrowDown, Star } from 'lucide-react'
+
+interface BestSellersConfig {
+  title: string
+  product_ids: string[]
+}
+
+interface ProductItem {
+  id: string
+  name: string
+  image_url: string | null
+  images: string[] | null
+  price: number
+}
+
+const DEFAULT_CONFIG: BestSellersConfig = {
+  title: 'Best Sellers',
+  product_ids: [],
+}
 
 export default function FeaturedProductsEditor() {
-  const [sections, setSections] = useState<any[]>([])
-  const [selectedSection, setSelectedSection] = useState<any>(null)
-  
-  const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+  const [config, setConfig] = useState<BestSellersConfig>(DEFAULT_CONFIG)
+  const [selectedProducts, setSelectedProducts] = useState<ProductItem[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  
+  const [searchResults, setSearchResults] = useState<ProductItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [searching, setSearching] = useState(false)
 
-  // 1. Cargar las secciones al montar
   useEffect(() => {
-    loadSections()
+    loadConfig()
   }, [])
 
-  // 2. Al cambiar de sección, cargar sus productos asignados
-  useEffect(() => {
-    if (selectedSection) {
-      loadFeaturedProducts(selectedSection.id)
-    }
-  }, [selectedSection])
-
-  const loadSections = async () => {
+  const loadConfig = async () => {
     try {
-      const { data, error } = await supabase.from('featured_sections').select('*').order('display_order')
-      if (error) throw error
-      setSections(data || [])
-      if (data?.length > 0) {
-        setSelectedSection(data[0]) // Select first by default
+      setLoading(true)
+      const data: BestSellersConfig = await cmsService.getConfig('best_sellers')
+      const cfg = data ?? DEFAULT_CONFIG
+      setConfig(cfg)
+
+      // Load product details for the stored IDs
+      if (cfg.product_ids?.length > 0) {
+        const { data: products } = await supabase
+          .from('products')
+          .select('id, name, image_url, images, price')
+          .in('id', cfg.product_ids)
+
+        if (products) {
+          // Maintain the order from config
+          const ordered = cfg.product_ids
+            .map(id => products.find(p => p.id === id))
+            .filter(Boolean) as ProductItem[]
+          setSelectedProducts(ordered)
+        }
       }
-    } catch (error: any) {
-      toast.error('Error al cargar secciones')
+    } catch (err) {
+      toast.error('Error al cargar Best Sellers')
     } finally {
       setLoading(false)
     }
   }
 
-  const loadFeaturedProducts = async (sectionId: string) => {
-    try {
-      // Necesitamos cargar el producto de `featured_products` cruzado con `products`.
-      // Como product_id es referenciado (si lo seteaste así), podemos hacer un JOIN, o hacerlo manual.
-      const { data: featuredData, error: featError } = await supabase
-        .from('featured_products')
-        .select('*')
-        .eq('section_id', sectionId)
-        .order('display_order')
-
-      if (featError) throw featError
-
-      const prodIds = featuredData?.map(f => f.product_id) || []
-      
-      if (prodIds.length > 0) {
-        // Cargar detalles de los productos
-        const { data: prodData, error: prodError } = await supabase
-          .from('products')
-          .select('id, name, image_url, price, stock')
-          .in('id', prodIds)
-        
-        if (prodError) throw prodError
-
-        // Combinar datos
-        const comb = featuredData?.map(feat => {
-          const p = prodData.find(pd => pd.id === feat.product_id)
-          return {
-             ...feat,
-             product: p || { name: 'Producto no encontrado', id: feat.product_id }
-          }
-        })
-        setFeaturedProducts(comb || [])
-      } else {
-        setFeaturedProducts([])
-      }
-    } catch (error: any) {
-      console.error(error)
-      toast.error('Error al cargar productos destacados')
-    }
-  }
-
   const handleSearch = async () => {
-    if (!searchQuery) return
+    if (!searchQuery.trim()) return
+    setSearching(true)
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, image_url, price, stock')
+        .select('id, name, image_url, images, price')
         .ilike('name', `%${searchQuery}%`)
-        .limit(5)
-      
+        .eq('is_visible', true)
+        .limit(8)
+
       if (error) throw error
-      setSearchResults(data || [])
-    } catch (error: any) {
-      toast.error('Error en búsqueda: ' + error.message)
+      // Filter out already selected
+      setSearchResults((data || []).filter(p => !selectedProducts.find(s => s.id === p.id)))
+    } catch (err: any) {
+      toast.error('Error en búsqueda: ' + err.message)
+    } finally {
+      setSearching(false)
     }
   }
 
-  const addProductToSection = (product: any) => {
-    if (!selectedSection) return
-    const exists = featuredProducts.find(f => f.product_id === product.id)
-    if (exists) {
-      toast.error('Este producto ya está en la sección')
-      return
-    }
-
-    const newItem = {
-      section_id: selectedSection.id,
-      product_id: product.id,
-      display_order: featuredProducts.length,
-      product: product,
-      isNew: true // Flag local
-    }
-
-    setFeaturedProducts([...featuredProducts, newItem])
+  const addProduct = (product: ProductItem) => {
+    if (selectedProducts.find(p => p.id === product.id)) return
+    setSelectedProducts(prev => [...prev, product])
+    setSearchResults(prev => prev.filter(p => p.id !== product.id))
     setSearchQuery('')
-    setSearchResults([])
   }
 
-  const moveProduct = (index: number, direction: 'up' | 'down') => {
-    if (direction === 'up' && index === 0) return
-    if (direction === 'down' && index === featuredProducts.length - 1) return
-
-    const newArr = [...featuredProducts]
-    const swapIndex = direction === 'up' ? index - 1 : index + 1
-    
-    const temp = newArr[index]
-    newArr[index] = newArr[swapIndex]
-    newArr[swapIndex] = temp
-
-    newArr.forEach((b, i) => b.display_order = i)
-    setFeaturedProducts(newArr)
+  const removeProduct = (id: string) => {
+    setSelectedProducts(prev => prev.filter(p => p.id !== id))
   }
 
-  const removeProduct = async (item: any, index: number) => {
-    if (!item.isNew && item.id) {
-       // Eliminar de base de datos directamente
-       try {
-         await supabase.from('featured_products').delete().eq('id', item.id)
-       } catch (e) {
-         toast.error('Error al remover de la base de datos')
-       }
-    }
-    setFeaturedProducts(p => p.filter((_, i) => i !== index))
+  const moveProduct = (index: number, dir: 'up' | 'down') => {
+    if (dir === 'up' && index === 0) return
+    if (dir === 'down' && index === selectedProducts.length - 1) return
+    const arr: ProductItem[] = [...selectedProducts]
+    const swapIdx = dir === 'up' ? index - 1 : index + 1
+    const a = arr[index] as ProductItem
+    const b = arr[swapIdx] as ProductItem
+    arr[index] = b
+    arr[swapIdx] = a
+    setSelectedProducts(arr)
   }
+
 
   const handleSave = async () => {
-    if (!selectedSection) return
     setSaving(true)
     try {
-      // 1. Opcional: Para evitar complicaciones, borramos todos los de la sección y reinsertamos.
-      // O solo actualizamos e insertamos nuevos. Por ser pocos, actualizar/insertar es mejor.
-      for (const item of featuredProducts) {
-        if (item.isNew) {
-           await supabase.from('featured_products').insert({
-             section_id: item.section_id,
-             product_id: item.product_id,
-             display_order: item.display_order
-           })
-        } else {
-           await supabase.from('featured_products').update({
-             display_order: item.display_order
-           }).eq('id', item.id)
-        }
+      const newConfig: BestSellersConfig = {
+        title: config.title,
+        product_ids: selectedProducts.map(p => p.id),
       }
-      toast.success('Cambios guardados')
-      loadFeaturedProducts(selectedSection.id) // Refrescar para quitar isNew y obtener id final
-    } catch (error: any) {
-      toast.error('Error al guardar: ' + error.message)
+      await cmsService.setConfig('best_sellers', newConfig)
+      setConfig(newConfig)
+      toast.success('Best Sellers guardado ✓')
+    } catch (err: any) {
+      toast.error('Error al guardar: ' + err.message)
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-gray-500" /></div>
+  const getProductImage = (p: ProductItem) => {
+    const imgs = p.images as any
+    if (Array.isArray(imgs) && imgs.length > 0) return imgs[0]
+    return p.image_url || null
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-4xl space-y-8">
-      
-      {/* Selector de Sección */}
-      <div className="flex items-center gap-4">
-        <h2 className="text-lg font-bold text-gray-900">Sección a Editar:</h2>
-        <div className="flex gap-2">
-          {sections.map(s => (
-            <button 
-              key={s.id}
-              onClick={() => setSelectedSection(s)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border ${selectedSection?.id === s.id ? 'bg-black text-white border-black' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
-            >
-              {s.section_name}
-            </button>
-          ))}
-        </div>
+    <div className="max-w-5xl space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          Selecciona y ordena los productos que aparecen en la sección <strong>Best Sellers</strong> del home.
+        </p>
+        <span className="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
+          {selectedProducts.length} productos
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        {/* Productos en la Sección */}
-        <div className="md:col-span-2 space-y-4">
-           <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 min-h-[400px]">
-             <h3 className="font-bold text-gray-900 mb-4 border-b pb-2">Orden de Productos</h3>
-             
-             {featuredProducts.length === 0 ? (
-                <div className="text-center text-gray-400 py-10">La sección está vacía. Añade productos desde el panel derecho.</div>
-             ) : (
-                <div className="space-y-2">
-                  {featuredProducts.map((item, index) => (
-                    <div key={item.product_id} className="flex items-center justify-between bg-white border border-gray-200 p-3 rounded-lg shadow-sm">
-                      
-                      <div className="flex items-center gap-4">
-                         <div className="flex flex-col gap-1">
-                           <button onClick={() => moveProduct(index, 'up')} disabled={index === 0} className="hover:text-black text-gray-400 disabled:opacity-20"><ArrowUp className="w-4 h-4" /></button>
-                           <button onClick={() => moveProduct(index, 'down')} disabled={index === featuredProducts.length - 1} className="hover:text-black text-gray-400 disabled:opacity-20"><ArrowDown className="w-4 h-4" /></button>
-                         </div>
-                         <img src={item.product?.image_url || 'https://via.placeholder.com/50'} className="w-12 h-12 object-cover rounded bg-gray-100" alt="img" />
-                         <div>
-                            <p className="text-sm font-bold text-gray-900">{item.product?.name}</p>
-                            <p className="text-xs text-gray-500">${item.product?.price}</p>
-                         </div>
-                      </div>
+      {/* Section Title */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-800 mb-1.5">Título de la Sección</label>
+        <input
+          type="text"
+          className="w-64 px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+          value={config.title}
+          onChange={e => setConfig(c => ({ ...c, title: e.target.value }))}
+          placeholder="Best Sellers"
+        />
+      </div>
 
-                      <button onClick={() => removeProduct(item, index)} className="p-2 text-red-500 hover:bg-red-50 rounded">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-
-                    </div>
-                  ))}
-                </div>
-             )}
-           </div>
-           
-           <div className="flex justify-end pt-2">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-black text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Guardar Orden
-            </button>
-          </div>
-        </div>
-
-        {/* Buscador de Productos para Añadir */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 h-fit">
-          <h3 className="font-bold text-gray-900 mb-4">Añadir Producto</h3>
-          
-          <div className="flex gap-2 mb-4">
-            <input 
-              type="text" 
-              className="flex-1 px-3 py-2 border rounded-lg text-sm"
-              placeholder="Buscar por nombre..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            />
-            <button 
-              onClick={handleSearch}
-              className="bg-gray-100 p-2 rounded-lg border hover:bg-gray-200"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {searchResults.map(prod => (
-              <div key={prod.id} className="flex items-center gap-3 p-2 border rounded-lg hover:bg-gray-50 text-sm">
-                <img src={prod.image_url} className="w-10 h-10 object-cover rounded" alt="thumb" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{prod.name}</p>
-                  <p className="text-xs text-gray-500">Stock: {prod.stock}</p>
-                </div>
-                <button 
-                  onClick={() => addProductToSection(prod)}
-                  className="p-1.5 bg-black text-white rounded text-xs px-2 whitespace-nowrap"
-                >
-                  Añadir
-                </button>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Selected Products List */}
+        <div className="lg:col-span-3 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Star className="w-4 h-4" />
+            Productos Seleccionados
+          </h3>
+          <div className="min-h-[300px] bg-gray-50 rounded-xl border border-gray-100 p-3 space-y-2">
+            {selectedProducts.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center py-12 text-gray-400">
+                <Star className="w-10 h-10 mb-3 opacity-30" />
+                <p className="text-sm">Busca y añade productos desde el panel derecho</p>
               </div>
-            ))}
-            {searchResults.length === 0 && searchQuery && (
-               <p className="text-xs text-gray-400 text-center py-4">Presiona el botón de buscar.</p>
+            ) : (
+              selectedProducts.map((product, idx) => (
+                <div key={product.id} className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-3 shadow-sm">
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <button
+                      onClick={() => moveProduct(idx, 'up')}
+                      disabled={idx === 0}
+                      className="p-0.5 text-gray-400 hover:text-black disabled:opacity-20 transition-colors"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-center text-gray-400 font-bold w-4">{idx + 1}</span>
+                    <button
+                      onClick={() => moveProduct(idx, 'down')}
+                      disabled={idx === selectedProducts.length - 1}
+                      className="p-0.5 text-gray-400 hover:text-black disabled:opacity-20 transition-colors"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                    {getProductImage(product) ? (
+                      <img src={getProductImage(product)!} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-lg font-bold">
+                        {product.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
+                    <p className="text-xs text-gray-500">Bs. {Number(product.price).toFixed(2)}</p>
+                  </div>
+
+                  <button
+                    onClick={() => removeProduct(product.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
             )}
           </div>
         </div>
 
+        {/* Search Panel */}
+        <div className="lg:col-span-2 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-800">Agregar Producto</h3>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-900 transition-colors"
+                placeholder="Buscar por nombre..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+              <button
+                onClick={handleSearch}
+                disabled={searching}
+                className="px-3 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors disabled:opacity-50"
+              >
+                {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </button>
+            </div>
+
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {searchResults.map(product => (
+                <div key={product.id} className="flex items-center gap-3 p-2.5 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="w-10 h-10 bg-gray-100 rounded-md overflow-hidden shrink-0">
+                    {getProductImage(product) ? (
+                      <img src={getProductImage(product)!} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm font-bold">
+                        {product.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
+                    <p className="text-xs text-gray-500">Bs. {Number(product.price).toFixed(2)}</p>
+                  </div>
+                  <button
+                    onClick={() => addProduct(product)}
+                    className="text-xs font-bold bg-black text-white px-3 py-1.5 rounded-md hover:bg-gray-800 transition-colors shrink-0"
+                  >
+                    + Añadir
+                  </button>
+                </div>
+              ))}
+              {searchResults.length === 0 && searchQuery && !searching && (
+                <p className="text-xs text-gray-400 text-center py-6">Presiona Enter o el botón de buscar</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end border-t pt-5">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-black text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2 transition-colors"
+        >
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          Guardar Best Sellers
+        </button>
       </div>
     </div>
   )

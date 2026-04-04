@@ -22,17 +22,37 @@ export interface Product {
   description: string | null
   category: string
   price: number
+  original_price: number | null
+  discount_percentage: number | null
   image_url: string | null // Legacy - mantener para compatibilidad
   images: string[] | null // Nuevo campo para múltiples imágenes
   drop_id: string | null
   is_visible: boolean
   created_at: string
+  tags?: ProductTagAssignment[]
 }
 
 export interface ProductVariant {
   id: string
   product_id: string
   size: string
+  price_override: number | null
+  created_at: string
+}
+
+export interface ProductTag {
+  id: string
+  name: string
+  category: string | null
+  tag_group: string
+  created_at: string
+}
+
+export interface ProductTagAssignment {
+  id: string
+  product_id: string
+  tag_id: string
+  tag?: ProductTag
   created_at: string
 }
 
@@ -134,10 +154,13 @@ export interface ProductFormData {
   description?: string
   category: string
   price: number
+  original_price?: number | null
+  discount_percentage?: number | null
   image_url?: string
   drop_id?: string
   is_visible: boolean
   sizes: string[]
+  tag_ids?: string[]
 }
 
 export interface SaleFormData {
@@ -282,6 +305,8 @@ export interface ProductFilter {
   search?: string
   includeHidden?: boolean
   drop_id?: string
+  tag_ids?: string[]
+  hasDiscount?: boolean
 }
 
 export interface SaleFilter {
@@ -381,3 +406,19 @@ export interface FormState {
   errors: ValidationError[]
   touched: Record<string, boolean>
 }
+
+// ==================== DISCOUNTS ====================
+
+export type DiscountType = 'PERCENTAGE' | 'FIXED';
+
+export interface Discount {
+  id: string
+  code: string
+  description?: string
+  type: DiscountType
+  value: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+

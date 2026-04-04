@@ -19,6 +19,7 @@ const CashPage = lazy(() => import('@/pages/CashPage').then(m => ({ default: m.C
 const DropsPage = lazy(() => import('@/pages/DropsPage').then(m => ({ default: m.DropsPage })))
 const CmsPage = lazy(() => import('@/pages/CmsPage'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
+const DiscountsPage = lazy(() => import('@/pages/DiscountsPage').then(m => ({ default: m.DiscountsPage })))
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -103,6 +104,7 @@ function App() {
             <Route path="drops" element={<DropsPage />} />
             <Route path="cms" element={<CmsPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="discounts" element={<DiscountsPage />} />
           </Route>
 
           {/* Catch all */}

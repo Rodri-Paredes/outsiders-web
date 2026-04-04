@@ -1,130 +1,161 @@
 import { Product } from '../lib/database.types'
+import { supabase } from '../lib/supabase'
 
-const MOCK_PRODUCTS: any[] = [
-  {
-    id: '1',
-    name: 'Star Boxy Tee White',
-    description: 'Heavyweight 100% cotton boxy tee. Oversized fit.',
-    price: 45,
-    image_url: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&h=750&fit=crop',
-    category: 'Camisetas',
-    is_visible: true,
-    stock: 20,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '2',
-    name: 'Valentine\'s Tee Black',
-    description: 'Special edition graphic tee in premium cotton.',
-    price: 50,
-    image_url: 'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=600&h=750&fit=crop',
-    category: 'Camisetas',
-    is_visible: true,
-    stock: 15,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '3',
-    name: 'Ice Cube Tee White',
-    description: 'Relaxed fit printed tee with custom artwork.',
-    price: 45,
-    image_url: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=750&fit=crop',
-    category: 'Camisetas',
-    is_visible: true,
-    stock: 50,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '4',
-    name: 'A New Star Hoodie Black',
-    description: 'Heavyweight french terry zip hoodie.',
-    price: 120,
-    image_url: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&h=750&fit=crop',
-    category: 'Sudaderas',
-    is_visible: true,
-    stock: 10,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '5',
-    name: 'A New Star Hoodie Light Grey',
-    description: 'Heavyweight french terry hoodie. Everyday essential.',
-    price: 120,
-    image_url: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=750&fit=crop',
-    category: 'Sudaderas',
-    is_visible: true,
-    stock: 0,
-    hasStock: false,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '6',
-    name: 'A New Star Joggers Black',
-    description: 'Relaxed fit joggers with embroidery detail.',
-    price: 100,
-    image_url: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=750&fit=crop',
-    category: 'Pantalones',
-    is_visible: true,
-    stock: 25,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '7',
-    name: 'A New Star Joggers Light Grey',
-    description: 'Relaxed fit joggers with embroidery detail.',
-    price: 100,
-    image_url: 'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=600&h=750&fit=crop',
-    category: 'Pantalones',
-    is_visible: true,
-    stock: 30,
-    hasStock: true,
-    created_at: new Date().toISOString()
-  },
-  {
-    id: '8',
-    name: 'Star Boxy Tee Navy',
-    description: 'Heavyweight 100% cotton boxy tee. Oversized fit.',
-    price: 45,
-    image_url: 'https://images.unsplash.com/photo-1623876229339-0df13d6a0027?w=600&h=750&fit=crop',
-    category: 'Camisetas',
-    is_visible: true,
-    stock: 5,
-    hasStock: true,
-    created_at: new Date().toISOString()
+function mapProduct(p: any): Product {
+  let totalStock = 0;
+  if (p.variants) {
+    p.variants.forEach((v: any) => {
+      if (v.stock) {
+        v.stock.forEach((s: any) => {
+          totalStock += s.quantity || 0;
+        });
+      }
+    });
   }
-]
+
+  let parsedImages: string[] = [];
+  if (Array.isArray(p.images)) {
+    parsedImages = p.images;
+  } else if (typeof p.images === 'string') {
+    try {
+      parsedImages = JSON.parse(p.images);
+    } catch(e) {
+      // If it's a comma separated string or pg array
+      parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.replace(/^"|"$/g, '').trim()).filter(Boolean);
+    }
+  }
+
+  if (parsedImages.length === 0 && p.image_url) {
+    parsedImages = [p.image_url];
+  }
+
+  // Map tags
+  const tags = p.tags?.map((assignment: any) => ({
+    id: assignment.id,
+    product_id: assignment.product_id || p.id,
+    tag_id: assignment.tag_id,
+    tag: assignment.tag,
+    created_at: assignment.created_at,
+  })) || [];
+
+  return {
+    ...p,
+    images: parsedImages,
+    tags,
+    stock: totalStock,
+    hasStock: totalStock > 0
+  } as Product & { images: string[] };
+}
 
 export const productsService = {
   async getProducts(): Promise<Product[]> {
-    // Simular latencia de red
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return MOCK_PRODUCTS;
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        variants:product_variants(
+          *,
+          stock(*)
+        ),
+        tags:product_tag_assignments(
+          id,
+          tag_id,
+          tag:product_tags(*)
+        )
+      `)
+      .eq('is_visible', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+
+    return (data || []).map(mapProduct);
   },
 
   async getAll(): Promise<Product[]> {
-    return this.getProducts();
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        variants:product_variants(
+          *,
+          stock(*)
+        ),
+        tags:product_tag_assignments(
+          id,
+          tag_id,
+          tag:product_tags(*)
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
+
+    return (data || []).map(mapProduct);
   },
 
   async getById(id: string): Promise<Product | null> {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const product = MOCK_PRODUCTS.find(p => p.id === id);
-    return product || null;
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        variants:product_variants(
+          *,
+          stock(*)
+        ),
+        tags:product_tag_assignments(
+          id,
+          tag_id,
+          tag:product_tags(*)
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error(`Error fetching product ${id}:`, error);
+      return null;
+    }
+
+    return data ? mapProduct(data) : null;
   },
 
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {
-    throw new Error("Mock service: Cannot create products");
+    const { data, error } = await supabase
+      .from('products')
+      .insert([product])
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return mapProduct(data);
   },
 
   async update(id: string, updates: Partial<Product>): Promise<Product> {
-    throw new Error("Mock service: Cannot update products");
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return mapProduct(data);
   },
 
   async delete(id: string): Promise<void> {
-    throw new Error("Mock service: Cannot delete products");
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 }

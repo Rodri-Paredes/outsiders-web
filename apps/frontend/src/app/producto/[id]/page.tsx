@@ -9,7 +9,7 @@ import { useCartStore } from '@/store/cartStore';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const SIZES = ['S', 'M', 'L', 'XL', 'TALLA UNICA'];
+// Sizes are now loaded dynamically from product variants
 
 export default function ProductPage() {
   const params = useParams();
@@ -69,10 +69,15 @@ export default function ProductPage() {
           });
           setAvailableSizes(sizeStock);
           
+          // Build sizes list from variants
+          const variantSizes = foundProduct.variants?.map(v => v.size) || [];
+          
           // Set default selected size to first available size
-          const firstAvailableSize = SIZES.find(size => (sizeStock[size] || 0) > 0);
+          const firstAvailableSize = variantSizes.find(size => (sizeStock[size] || 0) > 0);
           if (firstAvailableSize) {
             setSelectedSize(firstAvailableSize);
+          } else if (variantSizes.length > 0) {
+            setSelectedSize(variantSizes[0]);
           }
         } else {
           console.error('Product not found for ID:', productId);
@@ -114,10 +119,13 @@ export default function ProductPage() {
 
     try {
       const images = (product as any).images || [product.image_url].filter(Boolean);
+      const finalPrice = product.original_price && product.discount_percentage && product.discount_percentage > 0
+        ? product.original_price * (1 - product.discount_percentage / 100)
+        : product.price;
       addItem({
         productId: product.id,
         name: product.name,
-        price: product.price,
+        price: finalPrice,
         size: selectedSize,
         quantity: 1,
         image_url: images[0] || '',
@@ -177,15 +185,20 @@ export default function ProductPage() {
             {images.length > 0 ? (
               <>
                 <div className="aspect-square bg-gray-50 relative mb-4 overflow-hidden">
-                  <Image
-                    src={images[currentImageIndex]}
-                    alt={product.name}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    className="object-cover"
-                    priority={currentImageIndex === 0}
-                    quality={80}
-                  />
+                  {images.map((img: string, index: number) => (
+                    <Image
+                      key={`${img}-${index}`}
+                      src={img}
+                      alt={`${product.name} - view ${index + 1}`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className={`object-cover transition-opacity duration-300 ${
+                        index === currentImageIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                      }`}
+                      priority={index === 0}
+                      quality={80}
+                    />
+                  ))}
 
                   {/* Navigation Arrows */}
                   {images.length > 1 && (
@@ -262,9 +275,23 @@ export default function ProductPage() {
             </div>
 
             {/* Price */}
-            <p className="text-3xl font-semibold text-black mb-8">
-              ${product.price?.toFixed(2) || '0.00'}
-            </p>
+            {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
+              <div className="flex items-center gap-4 mb-8">
+                <p className="text-xl text-gray-400 line-through">
+                  Bs. {Number(product.original_price).toFixed(2)}
+                </p>
+                <p className="text-3xl font-semibold text-black">
+                  Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                </p>
+                <span className="inline-flex items-center px-3 py-1 bg-black text-white text-xs font-bold uppercase tracking-wider">
+                  -{product.discount_percentage}%
+                </span>
+              </div>
+            ) : (
+              <p className="text-3xl font-semibold text-black mb-8">
+                Bs. {product.price?.toFixed(2) || '0.00'}
+              </p>
+            )}
 
             {/* Description */}
             {product.description && (
@@ -279,7 +306,7 @@ export default function ProductPage() {
                 Selecciona tu talla:
               </label>
               <div className="grid grid-cols-5 gap-3">
-                {SIZES.map((size) => {
+                {(product.variants?.map(v => v.size) || []).map((size) => {
                   const sizeStock = availableSizes[size] || 0;
                   const hasStockForSize = sizeStock > 0;
                   

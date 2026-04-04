@@ -16,31 +16,6 @@ export default function ProductList() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('M');
 
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
-  // Imágenes de Unsplash para ropa streetwear
-  const unsplashImages = [
-    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1623876229339-0df13d6a0027?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=600&h=750&fit=crop'
-  ];
-
-  const unsplashImagesHover = [
-    'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1623876229339-0df13d6a0027?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=750&fit=crop',
-    'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=750&fit=crop'
-  ];
-
   useEffect(() => {
     productsService.getAll()
       .then((data) => {
@@ -53,13 +28,35 @@ export default function ProductList() {
       });
   }, []);
 
+  // Get available sizes from product variants
+  const getAvailableSizes = (product: Product): string[] => {
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.map(v => v.size);
+    }
+    // Fallback to default sizes
+    return ['XS', 'S', 'M', 'L', 'XL'];
+  };
+
+  // Calculate final price considering discount
+  const getFinalPrice = (product: Product): number => {
+    if (product.original_price && product.discount_percentage && product.discount_percentage > 0) {
+      return product.original_price * (1 - product.discount_percentage / 100);
+    }
+    return product.price;
+  };
+
+  const hasDiscount = (product: Product): boolean => {
+    return !!(product.original_price && product.discount_percentage && product.discount_percentage > 0);
+  };
+
   const handleOpenSizeModal = (product: Product) => {
-    if (!product.stock || product.stock === 0) {
+    if (!product.hasStock && product.stock === 0) {
       toast.error('Producto sin stock');
       return;
     }
     setSelectedProduct(product);
-    setSelectedSize('M');
+    const sizes = getAvailableSizes(product);
+    setSelectedSize(sizes.includes('M') ? 'M' : sizes[0] || 'M');
   };
 
   const handleAddToCart = () => {
@@ -69,7 +66,7 @@ export default function ProductList() {
       addItem({
         productId: selectedProduct.id,
         name: selectedProduct.name,
-        price: selectedProduct.price,
+        price: getFinalPrice(selectedProduct),
         size: selectedSize,
         quantity: 1,
         image_url: selectedProduct.image_url || ''
@@ -91,11 +88,13 @@ export default function ProductList() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {products.map((product, index) => {
-        const imageIndex = index % unsplashImages.length;
-        const mainImage = product.image_url || unsplashImages[imageIndex];
-        const hoverImage = unsplashImagesHover[imageIndex];
+      {products.map((product) => {
+        const productImages = (product as any).images || (product.image_url ? [product.image_url] : []);
+        const mainImage = productImages[0] || '';
+        const hoverImage = productImages[1] || mainImage;
         const isHovered = hoveredProduct === product.id;
+        const discount = hasDiscount(product);
+        const finalPrice = getFinalPrice(product);
 
         return (
           <article
@@ -107,7 +106,16 @@ export default function ProductList() {
           >
             {/* Image Container */}
             <div className="relative bg-[#f5f5f5] aspect-[4/5] w-full overflow-hidden mb-3">
-              {/* Hover Right Arrow like in Gods Brand */}
+              {/* Discount Badge */}
+              {discount && (
+                <div className="absolute top-3 left-3 z-20">
+                  <span className="inline-flex items-center px-2.5 py-1 bg-black text-white text-[10px] font-bold tracking-wider uppercase">
+                    -{product.discount_percentage}%
+                  </span>
+                </div>
+              )}
+
+              {/* Hover Right Arrow */}
               <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
                 <svg width="6" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M1 9L5 5L1 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -115,28 +123,32 @@ export default function ProductList() {
               </div>
 
               {/* Imagen principal */}
-              <Image
-                src={mainImage}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-0' : 'opacity-100'
-                  }`}
-                loading="lazy"
-                quality={80}
-              />
+              {mainImage && (
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className={`object-cover transition-opacity duration-500 ${isHovered && hoverImage !== mainImage ? 'opacity-0' : 'opacity-100'
+                    }`}
+                  loading="lazy"
+                  quality={80}
+                />
+              )}
 
               {/* Imagen en hover */}
-              <Image
-                src={hoverImage}
-                alt={`${product.name} - alternativa`}
-                fill
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'
-                  }`}
-                loading="lazy"
-                quality={80}
-              />
+              {hoverImage && hoverImage !== mainImage && (
+                <Image
+                  src={hoverImage}
+                  alt={`${product.name} - alternativa`}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                  className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  loading="lazy"
+                  quality={80}
+                />
+              )}
             </div>
 
             {/* Info Container */}
@@ -147,9 +159,20 @@ export default function ProductList() {
                   {product.name.toLowerCase()}
                 </h3>
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] md:text-[11px] font-bold text-black">
-                    ${Number(product.price).toFixed(2)}
-                  </span>
+                  {discount ? (
+                    <>
+                      <span className="text-[10px] md:text-[11px] text-gray-400 line-through">
+                        Bs. {Number(product.original_price).toFixed(2)}
+                      </span>
+                      <span className="text-[10px] md:text-[11px] font-bold text-black">
+                        Bs. {finalPrice.toFixed(2)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-[10px] md:text-[11px] font-bold text-black">
+                      Bs. {Number(product.price).toFixed(2)}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -185,16 +208,34 @@ export default function ProductList() {
             <h3 className="text-2xl font-bold text-black mb-2">
               {selectedProduct.name}
             </h3>
-            <p className="text-xl text-black mb-6 font-bold">
-              Bs. {selectedProduct.price.toFixed(2)}
-            </p>
+            
+            {/* Price with discount */}
+            <div className="mb-6">
+              {hasDiscount(selectedProduct) ? (
+                <div className="flex items-center gap-3">
+                  <p className="text-sm text-gray-400 line-through">
+                    Bs. {Number(selectedProduct.original_price).toFixed(2)}
+                  </p>
+                  <p className="text-xl text-black font-bold">
+                    Bs. {getFinalPrice(selectedProduct).toFixed(2)}
+                  </p>
+                  <span className="inline-flex items-center px-2 py-0.5 bg-black text-white text-xs font-bold rounded">
+                    -{selectedProduct.discount_percentage}%
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xl text-black font-bold">
+                  Bs. {selectedProduct.price.toFixed(2)}
+                </p>
+              )}
+            </div>
 
             <div className="mb-6">
               <label className="block text-sm text-gray-600 mb-3 uppercase tracking-wider font-semibold">
                 Selecciona tu talla:
               </label>
               <div className="grid grid-cols-3 gap-2">
-                {sizes.map((size) => (
+                {getAvailableSizes(selectedProduct).map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}

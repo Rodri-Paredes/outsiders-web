@@ -3,10 +3,11 @@ import { PaymentType, UserRole, DropStatus, CashRegisterStatus, MovementType } f
 // ==================== PRODUCT CATEGORIES ====================
 
 export const CATEGORIES = [
-  'Camisetas',
+  'Poleras',
   'Soleras',
   'Sudaderas',
   'Pantalones',
+  'Bermudas',
   'Accesorios',
   'Calzado',
   'Gorras',
@@ -27,6 +28,19 @@ export const SIZES = [
 ] as const
 
 export type Size = (typeof SIZES)[number]
+
+// Tallas disponibles por categoría — el formulario usa esto dinámicamente
+export const SIZES_BY_CATEGORY: Record<string, readonly string[]> = {
+  Poleras: ['XS', 'S', 'M', 'L', 'XL'],
+  Soleras: ['XS', 'S', 'M', 'L', 'XL'],
+  Sudaderas: ['XS', 'S', 'M', 'L', 'XL'],
+  Pantalones: ['38', '40', '42', '44', '46'],
+  Bermudas: ['38', '40', '42', '44', '46'],
+  Accesorios: ['TALLA UNICA'],
+  Calzado: ['38', '39', '40', '41', '42', '43', '44'],
+  Gorras: ['TALLA UNICA'],
+  Otros: ['XS', 'S', 'M', 'L', 'XL', 'TALLA UNICA'],
+} as const
 
 // ==================== PAYMENT TYPES ====================
 
