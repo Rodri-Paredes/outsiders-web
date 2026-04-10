@@ -1,8 +1,10 @@
-import { X, Printer } from 'lucide-react';
+import { X, Printer, ImageOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Sale } from '../../lib/types';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../ui/Button';
+import { formatCurrency } from '../../lib/utils';
 
 interface SaleReceiptProps {
   sale: Sale;
@@ -88,19 +90,37 @@ export function SaleReceipt({ sale, onClose }: SaleReceiptProps) {
               <tbody>
                 {items.map((item, index) => (
                   <tr key={index} className="border-b">
-                    <td className="py-2">
-                      <div className="font-medium">{item.productName}</div>
-                      <div className="text-xs text-gray-600">Talla: {item.size}</div>
-                      {item.itemDiscount > 0 && (
-                        <div className="text-xs text-red-600">
-                          Desc: -Bs {item.itemDiscount.toFixed(2)}
+                    <td className="py-2 flex items-center gap-2">
+                      <div className="w-10 h-10 flex-shrink-0 bg-gray-200 rounded overflow-hidden flex items-center justify-center print:hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageOff size={16} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          <Link
+                            to={`/admin/products/${item.productId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 hover:underline print:text-black print:no-underline"
+                          >
+                            {item.productName}
+                          </Link>
                         </div>
-                      )}
+                        <div className="text-xs text-gray-600">Talla: {item.size}</div>
+                        {item.itemDiscount > 0 && (
+                          <div className="text-xs text-red-600">
+                            Desc: -{formatCurrency(item.itemDiscount)}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="text-center">{item.quantity}</td>
-                    <td className="text-right">{item.price.toFixed(2)}</td>
+                    <td className="text-right">{formatCurrency(item.price)}</td>
                     <td className="text-right font-semibold">
-                      {(item.price * item.quantity - item.itemDiscount).toFixed(2)}
+                      {formatCurrency(item.price * item.quantity - item.itemDiscount)}
                     </td>
                   </tr>
                 ))}
@@ -112,26 +132,26 @@ export function SaleReceipt({ sale, onClose }: SaleReceiptProps) {
           <div className="space-y-2 text-sm mb-6">
             <div className="flex justify-between">
               <span>Subtotal:</span>
-              <span>Bs {sale.subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(sale.subtotal)}</span>
             </div>
 
             {items.some(item => item.itemDiscount > 0) && (
               <div className="flex justify-between text-red-600">
                 <span>Descuentos por prenda:</span>
-                <span>- Bs {items.reduce((sum, item) => sum + item.itemDiscount, 0).toFixed(2)}</span>
+                <span>- {formatCurrency(items.reduce((sum, item) => sum + item.itemDiscount, 0))}</span>
               </div>
             )}
 
             {sale.discount_amount > 0 && (
               <div className="flex justify-between text-red-600">
                 <span>Descuento adicional:</span>
-                <span>- Bs {sale.discount_amount.toFixed(2)}</span>
+                <span>- {formatCurrency(sale.discount_amount)}</span>
               </div>
             )}
 
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>TOTAL:</span>
-              <span>Bs {sale.total.toFixed(2)}</span>
+              <span>{formatCurrency(sale.total)}</span>
             </div>
           </div>
 
@@ -142,19 +162,19 @@ export function SaleReceipt({ sale, onClose }: SaleReceiptProps) {
               {sale.payment_details.efectivo && sale.payment_details.efectivo > 0 && (
                 <div className="flex justify-between">
                   <span>Efectivo:</span>
-                  <span>Bs {sale.payment_details.efectivo.toFixed(2)}</span>
+                  <span>{formatCurrency(sale.payment_details.efectivo)}</span>
                 </div>
               )}
               {sale.payment_details.qr && sale.payment_details.qr > 0 && (
                 <div className="flex justify-between">
                   <span>QR:</span>
-                  <span>Bs {sale.payment_details.qr.toFixed(2)}</span>
+                  <span>{formatCurrency(sale.payment_details.qr)}</span>
                 </div>
               )}
               {sale.payment_details.tarjeta && sale.payment_details.tarjeta > 0 && (
                 <div className="flex justify-between">
                   <span>Tarjeta:</span>
-                  <span>Bs {sale.payment_details.tarjeta.toFixed(2)}</span>
+                  <span>{formatCurrency(sale.payment_details.tarjeta)}</span>
                 </div>
               )}
             </div>

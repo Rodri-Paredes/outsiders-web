@@ -63,7 +63,9 @@ export const productService = {
         query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
       }
 
-      if (!filters?.includeHidden) {
+      if (filters?.includeHidden) {
+        query = query.eq('is_visible', false);
+      } else {
         query = query.eq('is_visible', true);
       }
 

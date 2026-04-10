@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense, useMemo } from 'react';
+import { useEffect, useState, Suspense, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
@@ -9,48 +9,73 @@ import { useCartStore } from '@/store/cartStore';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
 import { Search, Filter, X, Check } from 'lucide-react';
+import { useBranch } from '@/contexts/BranchContext';
 
 // Inner component handling the logic
 function ShopContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [mounted, setMounted] = useState(false);
   
-  // Tag filters state
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  // Initialize state directly from URL params
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
+  const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('tag') ? [searchParams.get('tag') as string] : []);
+  const [showOnlySale, setShowOnlySale] = useState(searchParams.get('sale') === 'true');
+  
+  const { selectedBranch } = useBranch();
+  const [mounted, setMounted] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  const categories = ['all', 'Poleras', 'Soleras', 'Sudaderas', 'Pantalones', 'Bermudas', 'Accesorios', 'Calzado', 'Gorras', 'Otros'];
+  const categories = ['all', 'Poleras', 'Soleras', 'Hoodies', 'Pantalones', 'Bermudas', 'Accesorios', 'Calzado', 'Gorras', 'Otros'];
 
   useEffect(() => {
     setMounted(true);
     // Hydrate cart store from localStorage
     useCartStore.persist.rehydrate();
-    loadProducts();
   }, []);
 
-  // Effect to handle URL param changes (e.g. from SearchOverlay while already on the page)
+  // Effect to handle URL param changes (e.g. from Link clicks while routing)
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q) {
-      setSearchTerm(q);
-      setSelectedCategory('all'); // Reset category to prioritize search term
+    const cat = searchParams.get('category');
+    const tag = searchParams.get('tag');
+    const saleParam = searchParams.get('sale');
+
+    if (q !== null) setSearchTerm(q);
+    if (cat !== null) setSelectedCategory(cat);
+    
+    setShowOnlySale(saleParam === 'true');
+    
+    // Si viene un tag en la URL, lo seleccionamos, pero solo si no está ya
+    if (tag) {
+      setSelectedTags((prev) => prev.includes(tag) ? prev : [tag]);
     }
   }, [searchParams]);
 
-  // Reset tags when category changes to avoid dead ends
+  // Reset tags when category changes manually, but NOT when URL is dictating the tag
+  const prevCategoryRef = useRef<string>(selectedCategory);
   useEffect(() => {
-    setSelectedTags([]);
-  }, [selectedCategory]);
+    // Solo borramos tags si cambia la categoría y la URL actual no nos está forzando un tag  
+    if (prevCategoryRef.current !== selectedCategory && !searchParams.get('tag')) {
+      setSelectedTags([]); 
+    }
+    prevCategoryRef.current = selectedCategory;
+  }, [selectedCategory, searchParams]);
+
+  // Reload products when branch changes (or on first mount)
+  useEffect(() => {
+    if (mounted) {
+      loadProducts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBranch, mounted]);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await productsService.getProducts();
+      const branchId = selectedBranch?.id;
+      const data = await productsService.getProducts(branchId);
       setProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
@@ -99,20 +124,26 @@ function ShopContent() {
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesSale = !showOnlySale || (product.original_price && product.discount_percentage && product.discount_percentage > 0);
     
     const matchesTags =
       selectedTags.length === 0 ||
-      selectedTags.some((tagName) => 
+      selectedTags.every((tagName) => 
         product.tags?.some((t) => t.tag?.name === tagName)
       );
 
-    return matchesSearch && matchesCategory && matchesTags;
+    return matchesSearch && matchesCategory && matchesTags && matchesSale;
   });
 
-  const toggleTag = (tagName: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]
-    );
+  const toggleTag = (group: string, tagName: string) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tagName)) {
+        return prev.filter((t) => t !== tagName);
+      }
+      const tagsInThisGroup = groupedTags[group] || [];
+      const prevWithoutSameGroup = prev.filter((t) => !tagsInThisGroup.includes(t));
+      return [...prevWithoutSameGroup, tagName];
+    });
   };
 
   const clearFilters = () => {
@@ -164,7 +195,7 @@ function ShopContent() {
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">{group}</h4>
                   <div className="space-y-3">
                     {tags.map((tag) => (
-                      <label key={`mobile-${tag}`} className="flex items-center gap-4 cursor-pointer group">
+                      <label key={`mobile-${tag}`} onClick={() => toggleTag(group, tag)} className="flex items-center gap-4 cursor-pointer group">
                         <div className={`w-5 h-5 border flex items-center justify-center transition-colors ${
                           selectedTags.includes(tag) ? 'bg-black border-black text-white' : 'border-gray-300 group-hover:border-black text-transparent'
                         }`}>
@@ -270,11 +301,11 @@ function ShopContent() {
                       return (
                         <button
                           key={`inline-${tag}`}
-                          onClick={() => toggleTag(tag)}
-                          className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 border ${
+                          onClick={() => toggleTag(group, tag)}
+                          className={`px-1 py-1 text-[10px] font-bold uppercase tracking-widest transition-all duration-200 border-b-2 ${
                             isActive
-                              ? 'bg-black text-white border-black'
-                              : 'bg-white text-gray-500 border-gray-200 hover:border-black hover:text-black'
+                              ? 'border-black text-black'
+                              : 'border-transparent text-gray-400 hover:text-black hover:border-gray-300'
                           }`}
                         >
                           {tag}
@@ -356,23 +387,17 @@ function ShopContent() {
                           </div>
                         )}
 
-                        {/* Discount Badge */}
-                        {product.original_price && product.discount_percentage && product.discount_percentage > 0 && (
-                          <div className="absolute top-2 left-2 md:top-3 md:left-3 z-10">
-                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-black text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
-                              -{product.discount_percentage}%
-                            </span>
-                          </div>
-                        )}
+                        {/* Badges Container */}
+                        <div className="absolute top-0 right-0 z-10 flex flex-col items-end">
+                          {/* No discount badge as requested */}
 
-                        {/* Stock Badge */}
-                        {!hasStock && (
-                          <div className="absolute top-2 right-2 md:top-3 md:right-3 z-10">
-                            <span className="inline-block px-2 py-1 md:px-3 md:py-1 bg-red-600 text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+                          {/* Stock Badge */}
+                          {!hasStock && (
+                            <span className="inline-block px-2 py-1.5 md:px-3 md:py-1.5 bg-black text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-center shadow-sm">
                               SOLD OUT
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
 
                         {/* Quick View Overlay (Desktop only) */}
                         {hasStock && (
@@ -380,25 +405,53 @@ function ShopContent() {
                         )}
                       </div>
 
-                      {/* Product Info */}
-                      <div className="space-y-1.5 px-1 flex flex-col items-start text-left">
-                        <h3 className="text-[11px] md:text-[13px] font-bold text-gray-900 uppercase tracking-wide line-clamp-2 transition-colors">
-                          {product.name}
+                      {/* Info Container */}
+                      <div className="flex flex-col w-full px-1 mt-2 text-left">
+                        {/* Product Name (Top) */}
+                        <h3 className="text-[11px] text-black mb-0.5 capitalize tracking-tight font-medium">
+                          {product.name.toLowerCase()}
                         </h3>
-                        {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-[10px] md:text-xs text-gray-400 line-through font-medium">
-                              Bs. {Number(product.original_price).toFixed(2)}
-                            </p>
-                            <p className="text-[13px] md:text-sm font-bold text-black">
-                              Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
-                            </p>
+
+                        {/* Price and Sizes (Bottom Row) */}
+                        <div className="flex justify-between items-center w-full mt-0.5">
+                          {/* Left Side: Price */}
+                          <div className="flex items-center gap-2">
+                            {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
+                              <>
+                                <span className="text-[11px] text-gray-400 line-through">
+                                  Bs. {Number(product.original_price).toFixed(2)}
+                                </span>
+                                <span className="text-[11px] text-gray-800 font-medium tracking-wide">
+                                  Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-[11px] text-gray-800 font-medium tracking-wide">
+                                Bs. {Number(product.price).toFixed(2)}
+                              </span>
+                            )}
                           </div>
-                        ) : (
-                          <p className="text-[13px] md:text-sm font-bold text-black">
-                            Bs. {product.price?.toFixed(2) || '0.00'}
-                          </p>
-                        )}
+
+                          {/* Right Side: Sizes */}
+                          <div className="flex items-center gap-1.5">
+                            {( ((product as any).variants && (product as any).variants.length > 0)
+                              ? (Array.from(new Set((product as any).variants.map((v: any) => v.size as string))) as string[])
+                              : ['S', 'M', 'L', 'XL']
+                            ).sort((a, b) => ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(a as string) - ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(b as string)).map((size) => {
+                              const hasCurrentStock = (product as any).variants 
+                                ? (product as any).variants.some((v: any) => v.size === size && (v.stock?.reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0) || 0) > 0) 
+                                : true;
+                              return (
+                                <span 
+                                  key={size} 
+                                  className={`text-[9px] uppercase tracking-wider transition-colors inline-block ${hasCurrentStock ? 'text-black font-semibold' : 'text-gray-300 font-medium'}`}
+                                >
+                                  {size}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </Link>
                   );

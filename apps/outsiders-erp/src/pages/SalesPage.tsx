@@ -13,6 +13,7 @@ import { SaleReceipt } from '../components/sales/SaleReceipt';
 import { Cart } from '../components/sales/Cart';
 import EmptyState from '../components/ui/EmptyState';
 import Toast from '../components/ui/Toast';
+import { formatCurrency } from '../lib/utils';
 
 export function SalesPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -211,7 +212,7 @@ export function SalesPage() {
                   <h3 className="font-semibold text-sm truncate">{product.name}</h3>
                   <p className="text-xs text-gray-600">{product.category}</p>
                   <p className="font-bold text-sm mt-1">
-                    Bs {product.price.toFixed(2)}
+                    {formatCurrency(product.price)}
                   </p>
                 </button>
               ))}

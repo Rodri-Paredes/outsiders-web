@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { useCartStore } from '@/store/cartStore';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useBranch } from '@/contexts/BranchContext';
 
 // Sizes are now loaded dynamically from product variants
 
@@ -19,9 +20,11 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState('M');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [availableSizes, setAvailableSizes] = useState<{[key: string]: number}>({});
   const addItem = useCartStore((state) => state.addItem);
   const items = useCartStore((state) => state.items);
+  const { selectedBranch } = useBranch();
 
   useEffect(() => {
     setMounted(true);
@@ -53,8 +56,9 @@ export default function ProductPage() {
         
         console.log('Loading product with ID:', productId, 'from slug:', slug);
         
-        // Fetch only this product
-        const foundProduct = await productsService.getById(productId);
+        // Fetch only this product, passing the selected branch to get accurate stock filtering
+        const branchId = selectedBranch?.id;
+        const foundProduct = await productsService.getById(productId, branchId);
         
         console.log('Found product:', foundProduct);
         
@@ -96,7 +100,7 @@ export default function ProductPage() {
     if (params.id) {
       loadProduct();
     }
-  }, [params.id, router]);
+  }, [params.id, router, selectedBranch]);
 
   const handleAddToCart = () => {
     const selectedSizeStock = availableSizes[selectedSize] || 0;
@@ -168,7 +172,7 @@ export default function ProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-24 pb-20">
+    <div className="min-h-screen bg-white pt-20 lg:pt-24 pb-16 lg:pb-20">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         {/* Back Button */}
         <button
@@ -179,12 +183,30 @@ export default function ProductPage() {
           Volver
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
           {/* Image Gallery */}
-          <div>
+          <div className="w-full lg:w-[65%]">
             {images.length > 0 ? (
               <>
-                <div className="aspect-square bg-gray-50 relative mb-4 overflow-hidden">
+                {/* Desktop Grid View */}
+                <div className={`hidden lg:grid gap-4 mb-4 ${images.length === 1 ? 'grid-cols-1 w-full max-w-sm mx-auto' : 'grid-cols-2'}`}>
+                  {images.map((img: string, index: number) => (
+                    <div key={`desktop-${index}`} className="aspect-[3/4] relative bg-gray-50 overflow-hidden group">
+                      <Image
+                        src={img}
+                        alt={`${product.name} - view ${index + 1}`}
+                        fill
+                        sizes="33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        priority={index === 0}
+                        quality={80}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile Carousel View */}
+                <div className="block lg:hidden aspect-square bg-gray-50 relative mb-4 overflow-hidden">
                   {images.map((img: string, index: number) => (
                     <Image
                       key={`${img}-${index}`}
@@ -205,28 +227,28 @@ export default function ProductPage() {
                     <>
                       <button
                         onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                        className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 w-8 h-8 lg:w-12 lg:h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
                       >
-                        <ChevronLeft className="w-6 h-6 text-black" />
+                        <ChevronLeft className="w-4 h-4 lg:w-6 lg:h-6 text-black" />
                       </button>
                       <button
                         onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                        className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 w-8 h-8 lg:w-12 lg:h-12 flex items-center justify-center bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
                       >
-                        <ChevronRight className="w-6 h-6 text-black" />
+                        <ChevronRight className="w-4 h-4 lg:w-6 lg:h-6 text-black" />
                       </button>
                     </>
                   )}
                 </div>
 
-                {/* Thumbnails */}
+                {/* Thumbnails (Mobile Only) */}
                 {images.length > 1 && (
-                  <div className="flex gap-3 overflow-x-auto pb-2">
+                  <div className="flex lg:hidden gap-3 overflow-x-auto pb-2">
                     {images.map((img: string, index: number) => (
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-24 h-24 border-2 transition-all relative overflow-hidden ${
+                        className={`flex-shrink-0 w-16 h-16 border-2 transition-all relative overflow-hidden ${
                           index === currentImageIndex
                             ? 'border-black'
                             : 'border-gray-200 opacity-60 hover:opacity-100'
@@ -236,7 +258,7 @@ export default function ProductPage() {
                           src={img}
                           alt={`${product.name} ${index + 1}`}
                           fill
-                          sizes="96px"
+                          sizes="64px"
                           className="object-cover"
                           loading="lazy"
                           quality={60}
@@ -254,7 +276,7 @@ export default function ProductPage() {
           </div>
 
           {/* Product Info */}
-          <div className="flex flex-col">
+          <div className="w-full lg:w-[35%] flex flex-col lg:sticky lg:top-36">
             {/* Category */}
             {product.category && (
               <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">
@@ -263,12 +285,12 @@ export default function ProductPage() {
             )}
 
             {/* Name */}
-            <div className="flex items-start gap-4 mb-6">
-              <h1 className="text-4xl md:text-5xl font-bold text-black uppercase tracking-tight">
+            <div className="flex items-start gap-4 mb-4 mt-2">
+              <h1 className="text-xl lg:text-2xl font-normal text-black uppercase tracking-wide leading-snug">
                 {product.name}
               </h1>
               {!hasStock && (
-                <span className="inline-block px-4 py-2 bg-red-500 text-white text-xs font-bold uppercase tracking-widest">
+                <span className="inline-block px-4 py-2 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest">
                   Sold Out
                 </span>
               )}
@@ -276,19 +298,16 @@ export default function ProductPage() {
 
             {/* Price */}
             {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
-              <div className="flex items-center gap-4 mb-8">
-                <p className="text-xl text-gray-400 line-through">
+              <div className="flex items-center gap-3 mb-8">
+                <p className="text-lg text-gray-400 line-through">
                   Bs. {Number(product.original_price).toFixed(2)}
                 </p>
-                <p className="text-3xl font-semibold text-black">
+                <p className="text-2xl font-medium text-black">
                   Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
                 </p>
-                <span className="inline-flex items-center px-3 py-1 bg-black text-white text-xs font-bold uppercase tracking-wider">
-                  -{product.discount_percentage}%
-                </span>
               </div>
             ) : (
-              <p className="text-3xl font-semibold text-black mb-8">
+              <p className="text-2xl font-medium text-black mb-8">
                 Bs. {product.price?.toFixed(2) || '0.00'}
               </p>
             )}
@@ -302,10 +321,18 @@ export default function ProductPage() {
 
             {/* Size Selection */}
             <div className="mb-10">
-              <label className="block text-sm font-semibold text-black mb-4 uppercase tracking-wider">
-                Selecciona tu talla:
-              </label>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="flex justify-between items-center mb-4">
+                <label className="block text-[11px] font-medium text-black uppercase tracking-widest">
+                  Selecciona tu talla
+                </label>
+                <button 
+                  onClick={() => setIsSizeGuideOpen(true)}
+                  className="text-[10px] text-gray-400 hover:text-black underline uppercase tracking-widest transition-colors"
+                >
+                  Guía de tallas
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-6 mb-3">
                 {(product.variants?.map(v => v.size) || []).map((size) => {
                   const sizeStock = availableSizes[size] || 0;
                   const hasStockForSize = sizeStock > 0;
@@ -315,17 +342,24 @@ export default function ProductPage() {
                     key={size}
                     onClick={() => hasStockForSize && setSelectedSize(size)}
                     disabled={!hasStockForSize}
-                    className={`py-4 text-sm font-medium uppercase tracking-wider border-2 transition-all ${
+                    className={`pb-1 px-1 text-xs font-medium uppercase tracking-widest border-b transition-all ${
                       !hasStockForSize
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        ? 'text-gray-300 border-transparent cursor-not-allowed line-through'
                         : selectedSize === size
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-black border-gray-300 hover:border-black'
+                        ? 'text-black border-black'
+                        : 'text-gray-400 border-transparent hover:text-black hover:border-gray-300'
                     }`}
                   >
                     {size}
                   </button>
                 )})}
+              </div>
+              <div className="min-h-[16px]">
+                {(availableSizes[selectedSize] || 0) > 0 && (availableSizes[selectedSize] || 0) <= 5 && (
+                  <p className="text-[10px] text-red-800 font-medium tracking-widest uppercase animate-in fade-in">
+                    Quedan pocas unidades
+                  </p>
+                )}
               </div>
             </div>
 
@@ -341,7 +375,7 @@ export default function ProductPage() {
                 const quantityInCart = existingItem ? existingItem.quantity : 0;
                 return quantityInCart >= selectedSizeStock;
               })()}
-              className={`w-full py-5 text-base font-semibold uppercase tracking-widest transition-all ${
+              className={`w-full py-4 lg:py-5 text-sm lg:text-base font-semibold uppercase tracking-widest transition-all ${
                 (() => {
                   const selectedSizeStock = availableSizes[selectedSize] || 0;
                   if (selectedSizeStock <= 0) return 'bg-gray-200 text-gray-400 cursor-not-allowed';
@@ -365,13 +399,69 @@ export default function ProductPage() {
                 return quantityInCart >= selectedSizeStock ? 'En el Carrito' : 'Añadir al Carrito';
               })()}
             </button>
+          </div>
+        </div>
+      </div>
 
-            {/* Stock Warning */}
-            {(availableSizes[selectedSize] || 0) > 0 && (availableSizes[selectedSize] || 0) <= 5 && (
-              <p className="text-sm text-orange-500 mt-4 text-center">
-                ¡Solo quedan {availableSizes[selectedSize]} unidades en talla {selectedSize}!
-              </p>
-            )}
+      {/* Size Guide Modal (Left side) */}
+      <div 
+        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
+          isSizeGuideOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <div 
+          className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={() => setIsSizeGuideOpen(false)}
+        />
+        <div 
+          className={`absolute top-0 left-0 w-full max-w-sm h-full bg-white shadow-2xl transition-transform duration-500 ease-out flex flex-col ${
+            isSizeGuideOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <h2 className="text-[14px] font-medium tracking-widest uppercase">Guía de Tallas</h2>
+            <button 
+              onClick={() => setIsSizeGuideOpen(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors text-black"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6 overflow-y-auto flex-1">
+            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+              Encuentra la talla perfecta para ti con nuestra guía de medidas. Todas las medidas están en centímetros.
+            </p>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Talla</th>
+                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Ancho</th>
+                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Largo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 font-medium">S</td>
+                  <td className="py-3 text-gray-500">51</td>
+                  <td className="py-3 text-gray-500">70</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 font-medium">M</td>
+                  <td className="py-3 text-gray-500">54</td>
+                  <td className="py-3 text-gray-500">72</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 font-medium">L</td>
+                  <td className="py-3 text-gray-500">57</td>
+                  <td className="py-3 text-gray-500">75</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 font-medium">XL</td>
+                  <td className="py-3 text-gray-500">60</td>
+                  <td className="py-3 text-gray-500">78</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

@@ -137,14 +137,33 @@ export default function HomeEditor() {
       {/* Images */}
       <section className="bg-gray-50 p-6 rounded-xl border border-gray-100 space-y-4">
         <div className="border-b border-gray-200 pb-3">
-          <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Imágenes del Slider</h2>
-          <p className="text-xs text-gray-400 mt-1">Imágenes verticales JPG/WebP. Recomendado: 800×1200px</p>
+          <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Imágenes del Hero</h2>
+          <p className="text-xs text-gray-400 mt-1">Imágenes verticales JPG/WebP. Sube 1 imagen para fondo completo, o 2 imágenes para pantalla dividida (como el diseño de referencia).</p>
         </div>
-        <ImageUploader
-          multiple
-          value={content.images || []}
-          onChange={(urls) => setContent(c => ({ ...c, images: urls as string[] }))}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">1. Imagen Principal (Izquierda o Completa)</h3>
+            <ImageUploader
+              value={content.images?.[0] || ''}
+              onChange={(url) => {
+                const currentImg2 = content.images?.[1] || '';
+                const newImages = [url as string, currentImg2].filter(Boolean);
+                setContent(c => ({ ...c, images: newImages }));
+              }}
+            />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">2. Imagen Secundaria (Derecha - Opcional)</h3>
+            <ImageUploader
+              value={content.images?.[1] || ''}
+              onChange={(url) => {
+                const currentImg1 = content.images?.[0] || '';
+                const newImages = [currentImg1, url as string].filter(Boolean);
+                setContent(c => ({ ...c, images: newImages }));
+              }}
+            />
+          </div>
+        </div>
       </section>
 
       <div className="flex justify-end border-t pt-5">

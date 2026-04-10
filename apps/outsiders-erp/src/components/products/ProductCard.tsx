@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../lib/utils';
 import { Edit, Trash2, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product } from '../../lib/types';
 import Badge from '../ui/Badge';

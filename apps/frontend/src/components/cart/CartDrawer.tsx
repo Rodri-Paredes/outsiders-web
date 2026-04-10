@@ -1,4 +1,5 @@
 'use client';
+import { supabase } from '@/lib/supabase';
 
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
@@ -7,14 +8,11 @@ import { X, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
+import { useBranch, BRANCHES as BRANCH_OPTIONS } from '@/contexts/BranchContext';
 
-const BRANCHES = [
-  'Sucursal Centro',
-  'Sucursal Norte',
-  'Sucursal Sur',
-  'Sucursal Este',
-  'Sucursal Oeste'
-];
+// Remove local BRANCHES constant — read from context
+
+
 
 const CITIES = [
   'La Paz',
@@ -35,9 +33,11 @@ export function CartDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [branch, setBranch] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'shipping' | ''>('');
   const [city, setCity] = useState('');
   const [comments, setComments] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
+  const { selectedBranch } = useBranch();
 
   const items = useCartStore((state) => state.items);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -48,6 +48,13 @@ export function CartDrawer() {
     setMounted(true);
     useCartStore.persist.rehydrate();
   }, []);
+
+  // Pre-select branch from global context
+  useEffect(() => {
+    if (selectedBranch) {
+      setBranch(selectedBranch.name);
+    }
+  }, [selectedBranch]);
 
   // Load products when cart opens
   useEffect(() => {
@@ -79,36 +86,74 @@ export function CartDrawer() {
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  const handleFinalizePurchase = () => {
+  const handleFinalizePurchase = async () => {
     if (items.length === 0) {
       toast.error('Tu carrito está vacío');
       return;
     }
 
-    if (!branch || !city) {
-      toast.error('Selecciona sucursal y ciudad de entrega');
+    if (!deliveryMethod) {
+      toast.error('Selecciona un método de entrega');
+      return;
+    }
+
+    if (deliveryMethod === 'pickup' && !branch) {
+      toast.error('Selecciona la sucursal de recojo');
+      return;
+    }
+
+    if (deliveryMethod === 'shipping' && !city) {
+      toast.error('Selecciona la ciudad de envío');
+      return;
+    }
+
+    // Generate short code (e.g. ZNHQUUVC)
+    const orderCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    
+    // Attempt to get user if logged in
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Save order in whatsapp_orders table
+    const orderData = {
+      id: orderCode,
+      customer_id: user ? user.id : null,
+      total: subtotal,
+      city: deliveryMethod === 'pickup' ? branch : city,
+      status: 'pendiente',
+      delivery_method: deliveryMethod,
+      branch: branch || null,
+      items: items
+    };
+
+    try {
+      const { error } = await supabase.from('whatsapp_orders').insert([orderData]);
+      if (error) {
+        console.error('Error saving order', error);
+        toast.error('Hubo un problema procesando tu orden. Intenta nuevamente.');
+        return;
+      }
+    } catch(err) {
+      console.error(err);
+      toast.error('Ocurrió un error inesperado');
       return;
     }
 
     // Build WhatsApp message
-    let message = `*NUEVO PEDIDO - OUTSIDERS*\n\n`;
-    message += `*Productos:*\n`;
-
-    items.forEach((item, index) => {
-      message += `\n${index + 1}. ${item.name}\n`;
-      message += `   Talla: ${item.size}\n`;
-      message += `   Cantidad: ${item.quantity}\n`;
-      message += `   Precio: $${item.price.toFixed(2)}\n`;
-      message += `   Total: $${(item.price * item.quantity).toFixed(2)}\n`;
-    });
-
-    message += `\n*Subtotal: $${subtotal.toFixed(2)}*\n\n`;
-    message += `*Datos de entrega:*\n`;
-    message += `Sucursal: ${branch}\n`;
-    message += `Ciudad: ${city}\n`;
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://outsiders.bo';
+    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+    const originCity = deliveryMethod === 'pickup' ? `${branch} (Recojo en tienda)` : city;
+    
+    let message = `¡Hola! 👋 Quiero realizar el siguiente pedido:\n\n`;
+    message += `RESUMEN DEL PEDIDO:\n`;
+    message += `🛍 ${totalQuantity} producto(s) - Total: Bs. ${subtotal.toFixed(2)}\n`;
+    message += `📍 Ciudad de entrega: ${originCity}\n\n`;
+    message += `🔗 Ver pedido completo con imágenes:\n`;
+    message += `${baseUrl}/pedido/${orderCode}\n\n`;
+    message += `Código de pedido: ${orderCode}\n\n`;
+    message += `¿Podrían confirmarme la disponibilidad y opciones de pago? ¡Gracias! 🙌`;
 
     if (comments.trim()) {
-      message += `\nComentarios: ${comments}\n`;
+      message += `\n\nNotas: ${comments}`;
     }
 
     const encodedMessage = encodeURIComponent(message);
@@ -117,8 +162,9 @@ export function CartDrawer() {
     // Open WhatsApp
     window.open(whatsappUrl, '_blank');
 
-    // Show success message
-    toast.success('Redirigiendo a WhatsApp...');
+    clearCart();
+    setIsOpen(false);
+    toast.success('Pedido registrado y abriendo WhatsApp...');
   };
 
   return (
@@ -190,14 +236,9 @@ export function CartDrawer() {
                         <h3 className="font-semibold text-black text-xs md:text-sm uppercase mb-1 truncate">
                           {item.name}
                         </h3>
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-gray-500 mb-4">
                           Talla: <span className="font-medium text-black">{item.size}</span>
                         </p>
-                        {products.length > 0 && (
-                          <p className="text-xs text-gray-400 mb-2">
-                            Stock disponible: <span className="font-medium text-black">{getAvailableStock(item)}</span>
-                          </p>
-                        )}
 
                         {/* Quantity Selector */}
                         <div className="flex items-center gap-2 md:gap-3 mt-auto">
@@ -260,51 +301,109 @@ export function CartDrawer() {
                 </div>
               </div>
 
-              {/* Branch Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-black uppercase tracking-wider mb-2">
-                  Sucursal de atención:
+              {/* Delivery Method */}
+              <div className="relative mb-6">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Método de Entrega
                 </label>
-                <select
-                  value={branch}
-                  onChange={(e) => setBranch(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 text-sm text-black focus:outline-none focus:border-black"
-                >
-                  <option value="">Selecciona una sucursal</option>
-                  {BRANCHES.map((b) => (
-                    <option key={b} value={b}>{b}</option>
+                <div className="flex flex-wrap gap-5">
+                  {[
+                    { id: 'pickup', label: 'Recoger en Tienda' },
+                    { id: 'shipping', label: 'Envío' }
+                  ].map((method) => (
+                    <label key={method.id} className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-3.5 h-3.5 rounded-full border flex flex-shrink-0 items-center justify-center transition-colors ${deliveryMethod === method.id ? 'border-black' : 'border-gray-300 group-hover:border-black'}`}>
+                        {deliveryMethod === method.id && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <span className={`text-[11px] uppercase tracking-wider transition-colors ${deliveryMethod === method.id ? 'text-black font-bold' : 'text-gray-500 group-hover:text-black'}`}>
+                        {method.label}
+                      </span>
+                      <input 
+                        type="radio" 
+                        name="deliveryMethod" 
+                        value={method.id} 
+                        checked={deliveryMethod === method.id} 
+                        onChange={(e) => {
+                          setDeliveryMethod(e.target.value as 'pickup' | 'shipping');
+                          if (e.target.value === 'pickup') setCity('');
+                          if (e.target.value === 'shipping') setBranch('');
+                        }} 
+                        className="hidden" 
+                      />
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
+
+              {/* Branch Selection */}
+              {deliveryMethod === 'pickup' && (
+              <div className="relative mb-2 animate-in fade-in slide-in-from-top-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Sucursal de Atención
+                </label>
+                <div className="flex flex-wrap gap-5">
+                  {BRANCH_OPTIONS.map((b) => (
+                    <label key={b.id} className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-3.5 h-3.5 rounded-full border flex flex-shrink-0 items-center justify-center transition-colors ${branch === b.name ? 'border-black' : 'border-gray-300 group-hover:border-black'}`}>
+                        {branch === b.name && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <span className={`text-[11px] uppercase tracking-wider transition-colors ${branch === b.name ? 'text-black font-bold' : 'text-gray-500 group-hover:text-black'}`}>
+                        {b.label}
+                      </span>
+                      <input 
+                        type="radio" 
+                        name="branch" 
+                        value={b.name} 
+                        checked={branch === b.name} 
+                        onChange={(e) => setBranch(e.target.value)} 
+                        className="hidden" 
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+              )}
 
               {/* City Selection */}
-              <div>
-                <label className="block text-xs font-semibold text-black uppercase tracking-wider mb-2">
-                  Ciudad de entrega:
+              {deliveryMethod === 'shipping' && (
+              <div className="relative mb-2 animate-in fade-in slide-in-from-top-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Ciudad de Entrega
                 </label>
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 text-sm text-black focus:outline-none focus:border-black"
-                >
-                  <option value="">Selecciona una ciudad</option>
+                <div className="flex flex-wrap gap-x-5 gap-y-3">
                   {CITIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <label key={c} className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-3.5 h-3.5 rounded-full border flex flex-shrink-0 items-center justify-center transition-colors ${city === c ? 'border-black' : 'border-gray-300 group-hover:border-black'}`}>
+                        {city === c && <div className="w-2 h-2 bg-black rounded-full" />}
+                      </div>
+                      <span className={`text-[11px] uppercase tracking-wider transition-colors ${city === c ? 'text-black font-bold' : 'text-gray-500 group-hover:text-black'}`}>
+                        {c}
+                      </span>
+                      <input 
+                        type="radio" 
+                        name="city" 
+                        value={c} 
+                        checked={city === c} 
+                        onChange={(e) => setCity(e.target.value)} 
+                        className="hidden" 
+                      />
+                    </label>
                   ))}
-                </select>
+                </div>
               </div>
+              )}
 
               {/* Comments */}
-              <div>
-                <label className="block text-xs font-semibold text-black uppercase tracking-wider mb-2">
-                  Comentarios opcionales:
+              <div className="relative pt-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Notas de Pedido (Opcional)
                 </label>
                 <textarea
                   value={comments}
                   onChange={(e) => setComments(e.target.value)}
-                  placeholder="Ej: Preferencia de color, instrucciones de entrega..."
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 text-sm text-black placeholder-gray-400 focus:outline-none focus:border-black resize-none"
+                  placeholder="Instrucciones adicionales para la entrega..."
+                  rows={2}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 text-xs text-black placeholder-gray-400 focus:outline-none focus:border-black focus:bg-white transition-colors resize-none"
                 />
               </div>
 

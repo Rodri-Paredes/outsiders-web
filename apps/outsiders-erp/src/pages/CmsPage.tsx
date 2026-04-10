@@ -18,10 +18,16 @@ interface Tab {
 
 const tabs: Tab[] = [
   {
+    id: 'hero',
+    label: 'Hero Principal',
+    icon: Layout,
+    description: 'Imágenes y textos de la sección superior a pantalla completa (1 o 2 imágenes)',
+  },
+  {
     id: 'banner',
-    label: 'Banner',
+    label: 'Banner Promocional',
     icon: ImageIcon,
-    description: 'Imagen y texto del hero principal',
+    description: 'Imagen y texto del bloque horizontal dentro del sitio',
   },
   {
     id: 'best_sellers',
@@ -33,7 +39,7 @@ const tabs: Tab[] = [
     id: 'categories',
     label: 'Categorías',
     icon: LayoutGrid,
-    description: 'Tarjetas de categorías del home (imagen, título, link)',
+    description: 'Tarjetas de categorías del home',
   },
   {
     id: 'sections',
@@ -41,16 +47,10 @@ const tabs: Tab[] = [
     icon: Grid3X3,
     description: 'Secciones dinámicas del home',
   },
-  {
-    id: 'hero',
-    label: 'Textos Hero',
-    icon: Layout,
-    description: 'Título, subtítulo e imágenes del slider',
-  },
 ]
 
 export default function CmsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('banner')
+  const [activeTab, setActiveTab] = useState<TabId>('hero') // Default to hero
   const currentTab = tabs.find(t => t.id === activeTab)!
 
   return (

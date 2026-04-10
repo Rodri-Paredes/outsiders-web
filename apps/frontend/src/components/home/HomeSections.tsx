@@ -61,7 +61,7 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
             setProducts((data || []).map(mapProduct));
           }
         }
-      } else if (section.type === 'products' && section.product_ids?.length > 0) {
+      } else if (section.type === 'products' && section.product_ids && section.product_ids.length > 0) {
         // Fetch specific products in order
         const { data } = await supabase
           .from('products')

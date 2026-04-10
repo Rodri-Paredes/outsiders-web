@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
+import { Montserrat } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { ToastProvider } from '@/components/ToastProvider';
 import { CartDrawer } from '@/components/cart/CartDrawer';
+import { BranchProvider } from '@/contexts/BranchContext';
+import { BranchModal } from '@/components/BranchModal';
 
-const outfit = Outfit({ subsets: ['latin'] });
+const montserrat = Montserrat({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://outsiders-web.vercel.app'),
@@ -28,16 +30,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={outfit.className}>
-        <Navbar />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
-        <CartDrawer />
-        <WhatsAppButton />
-        <ToastProvider />
+      <body className={montserrat.className}>
+        <BranchProvider>
+          <BranchModal />
+          <Navbar />
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Footer />
+          <CartDrawer />
+          <WhatsAppButton />
+          <ToastProvider />
+        </BranchProvider>
       </body>
     </html>
   );
 }
+

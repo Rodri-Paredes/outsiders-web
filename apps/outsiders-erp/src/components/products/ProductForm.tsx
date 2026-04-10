@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../lib/utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent } from 'lucide-react';
 import { Product, ProductTag } from '../../lib/types';

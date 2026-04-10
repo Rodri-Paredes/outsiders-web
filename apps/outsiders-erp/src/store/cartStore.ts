@@ -70,7 +70,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         price: product.price,
         quantity,
         available,
-        imageUrl: product.image_url || undefined,
+        imageUrl: product.images?.[0] || product.image_url || undefined,
         itemDiscount: 0,
       }
 

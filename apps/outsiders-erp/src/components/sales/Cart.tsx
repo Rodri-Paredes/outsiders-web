@@ -1,7 +1,9 @@
-import { Trash2, Minus, Plus } from 'lucide-react';
+import { Trash2, Minus, Plus, ImageOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useCartStore } from '../../store/cartStore';
 import { Button } from '../ui/Button';
 import Input from '../ui/Input';
+import { formatCurrency } from '../../lib/utils';
 
 interface CartProps {
   onProceedToPayment: () => void;
@@ -65,11 +67,29 @@ export function Cart({ onProceedToPayment }: CartProps) {
                 className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg"
               >
                 <div className="flex gap-3">
+                  <div className="w-16 h-16 flex-shrink-0 bg-gray-200 rounded-md overflow-hidden flex items-center justify-center">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.productName}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <ImageOff size={24} className="text-gray-400" />
+                    )}
+                  </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-sm">{item.productName}</h3>
+                    <Link
+                      to={`/admin/products/${item.productId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {item.productName}
+                    </Link>
                     <p className="text-xs text-gray-600">Talla: {item.size}</p>
                     <p className="text-sm font-bold mt-1">
-                      Bs {item.price.toFixed(2)} c/u
+                      {formatCurrency(item.price)} c/u
                     </p>
                   </div>
 
@@ -101,7 +121,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
                     </div>
 
                     <p className="text-sm font-bold">
-                      Bs {(item.price * item.quantity).toFixed(2)}
+                      {formatCurrency(item.price * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -129,7 +149,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
                   />
                   {item.itemDiscount > 0 && (
                     <span className="text-xs font-semibold text-green-600 flex-shrink-0">
-                      -Bs {item.itemDiscount.toFixed(2)}
+                      -{formatCurrency(item.itemDiscount)}
                     </span>
                   )}
                 </div>
@@ -145,7 +165,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
           {/* Subtotal */}
           <div className="flex justify-between text-sm">
             <span>Subtotal:</span>
-            <span className="font-semibold">Bs {subtotal.toFixed(2)}</span>
+            <span className="font-semibold">{formatCurrency(subtotal)}</span>
           </div>
 
           {/* Descuentos individuales */}
@@ -153,7 +173,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
             <div className="flex justify-between text-sm text-green-600">
               <span>Descuentos por prenda:</span>
               <span className="font-semibold">
-                -Bs {items.reduce((sum, item) => sum + item.itemDiscount, 0).toFixed(2)}
+                -{formatCurrency(items.reduce((sum, item) => sum + item.itemDiscount, 0))}
               </span>
             </div>
           )}
@@ -177,7 +197,7 @@ export function Cart({ onProceedToPayment }: CartProps) {
           {/* Total */}
           <div className="flex justify-between text-lg font-bold pt-2 border-t">
             <span>TOTAL:</span>
-            <span>Bs {total.toFixed(2)}</span>
+            <span>{formatCurrency(total)}</span>
           </div>
 
           {/* Botón Pagar */}

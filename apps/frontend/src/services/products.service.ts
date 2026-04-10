@@ -1,17 +1,29 @@
 import { Product } from '../lib/database.types'
 import { supabase } from '../lib/supabase'
 
-function mapProduct(p: any): Product {
+function mapProduct(p: any, branchId?: string): Product {
   let totalStock = 0;
   if (p.variants) {
     p.variants.forEach((v: any) => {
       if (v.stock) {
         v.stock.forEach((s: any) => {
-          totalStock += s.quantity || 0;
+          // If a branchId is provided, filter stock by branch_id
+          if (!branchId || s.branch_id === branchId) {
+            totalStock += s.quantity || 0;
+          }
         });
       }
     });
   }
+
+  // Deep-copy variants with branch-filtered stock totals
+  const filteredVariants = p.variants?.map((v: any) => ({
+    ...v,
+    stock: v.stock || [],
+    branchStock: branchId
+      ? (v.stock || []).filter((s: any) => s.branch_id === branchId)
+      : (v.stock || []),
+  })) || [];
 
   let parsedImages: string[] = [];
   if (Array.isArray(p.images)) {
@@ -42,13 +54,14 @@ function mapProduct(p: any): Product {
     ...p,
     images: parsedImages,
     tags,
+    variants: filteredVariants,
     stock: totalStock,
     hasStock: totalStock > 0
   } as Product & { images: string[] };
 }
 
 export const productsService = {
-  async getProducts(): Promise<Product[]> {
+  async getProducts(branchId?: string): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -71,7 +84,7 @@ export const productsService = {
       return [];
     }
 
-    return (data || []).map(mapProduct);
+    return (data || []).map((p) => mapProduct(p, branchId));
   },
 
   async getAll(): Promise<Product[]> {
@@ -96,10 +109,10 @@ export const productsService = {
       return [];
     }
 
-    return (data || []).map(mapProduct);
+    return (data || []).map((p) => mapProduct(p));
   },
 
-  async getById(id: string): Promise<Product | null> {
+  async getById(id: string, branchId?: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -122,7 +135,7 @@ export const productsService = {
       return null;
     }
 
-    return data ? mapProduct(data) : null;
+    return data ? mapProduct(data, branchId) : null;
   },
 
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {

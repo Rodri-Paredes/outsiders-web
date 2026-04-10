@@ -7,6 +7,7 @@ import { useCartStore } from '../../store/cartStore';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Toast from '../ui/Toast';
+import { formatCurrency } from '../../lib/utils';
 
 interface SizeSelectionModalProps {
   product: Product;
@@ -131,7 +132,7 @@ export function SizeSelectionModal({
             <div>
               <h3 className="font-semibold">{product.name}</h3>
               <p className="text-sm text-gray-600">{product.category}</p>
-              <p className="font-bold mt-1">Bs {product.price.toFixed(2)}</p>
+              <p className="font-bold mt-1">{formatCurrency(product.price)}</p>
             </div>
           </div>
 

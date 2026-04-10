@@ -1,3 +1,4 @@
+import { formatCurrency } from '../lib/utils';
 import { useState, useEffect } from 'react';
 import { 
   DollarSign, 
@@ -7,8 +8,10 @@ import {
   CreditCard,
   Smartphone,
   Wallet,
-  Calendar
+  Calendar,
+  ImageOff
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { reportService } from '../services/reportService';
 import { useAuthStore } from '../store/authStore';
 import Card from '../components/ui/Card';
@@ -68,12 +71,6 @@ export default function DashboardPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-BO', {
-      style: 'currency',
-      currency: 'BOB',
-    }).format(amount);
-  };
 
   const getPaymentIcon = (type: string) => {
     switch (type) {
@@ -278,12 +275,38 @@ export default function DashboardPage() {
                           </td>
                         )}
                         <td className="py-3 px-4 text-sm">
-                          {item.product_variant?.product?.name || 'N/A'}
-                          {item.item_discount > 0 && (
-                            <div className="text-xs text-red-600 mt-1">
-                              Desc. item: -Bs {item.item_discount.toFixed(2)}
+                            <div className="flex gap-2 items-center">
+                              <div className="w-10 h-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                                {item.product_variant?.product?.images?.[0] || item.product_variant?.product?.image_url ? (
+                                  <img 
+                                    src={item.product_variant?.product?.images?.[0] || item.product_variant?.product?.image_url} 
+                                    alt={item.product_variant?.product?.name || 'Product'} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <ImageOff size={16} className="text-gray-400" />
+                                )}
+                              </div>
+                              <div>
+                                {item.product_variant?.product_id ? (
+                                  <Link
+                                    to={`/admin/products/${item.product_variant?.product_id}`}
+                                    className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {item.product_variant?.product?.name || 'N/A'}
+                                  </Link>
+                                ) : (
+                                  <div className="font-medium">{item.product_variant?.product?.name || 'N/A'}</div>
+                                )}
+                                {item.item_discount > 0 && (
+                                  <div className="text-xs text-red-600 mt-1">
+                                    Desc. item: -Bs {item.item_discount.toFixed(2)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
                         </td>
                         <td className="py-3 px-4 text-sm">
                           <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium">

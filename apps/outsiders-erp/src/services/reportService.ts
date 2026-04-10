@@ -182,8 +182,9 @@ export const reportService = {
             subtotal,
             item_discount,
             product_variant:product_variants(
+              product_id,
               size,
-              product:products(name)
+              product:products(id, name, image_url, images)
             )
           )
         `)

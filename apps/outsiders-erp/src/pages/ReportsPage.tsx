@@ -1,3 +1,4 @@
+import { formatCurrency } from '../lib/utils';
 import { useState, useEffect } from 'react';
 import { 
   Download, 
@@ -6,8 +7,10 @@ import {
   Package,
   DollarSign,
   ShoppingCart,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ImageOff
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { reportService } from '../services/reportService';
 import { excelService } from '../services/excelService';
@@ -173,12 +176,6 @@ export default function ReportsPage() {
     Toast.success('Reporte CSV exportado correctamente');
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-BO', {
-      style: 'currency',
-      currency: 'BOB',
-    }).format(amount);
-  };
 
   return (
     <div className="space-y-6">
@@ -335,22 +332,49 @@ export default function ReportsPage() {
                           })}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="space-y-2">
-                            {sale.sale_items.map((item: any, idx: number) => (
-                              <div key={idx} className="text-sm">
-                                <div className="font-medium text-gray-900">
-                                  {item.product_variant?.product?.name} - {item.product_variant?.size}
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                  {item.quantity}x {formatCurrency(item.unit_price)}
-                                </div>
-                                {item.item_discount > 0 && (
-                                  <div className="text-xs text-red-600 mt-1">
-                                    Desc. item: -Bs {item.item_discount.toFixed(2)}
+                          <div className="space-y-3">
+                            {sale.sale_items.map((item: any, idx: number) => {
+                              const product = item.product_variant?.product;
+                              const imageUrl = product?.images?.[0] || product?.image_url;
+                              const productId = item.product_variant?.product_id;
+
+                              return (
+                                <div key={idx} className="text-sm flex gap-3 items-center">
+                                  <div className="w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
+                                    {imageUrl ? (
+                                      <img src={imageUrl} alt={product?.name || 'Product'} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <ImageOff size={16} className="text-gray-400" />
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ))}
+                                  <div className="flex-1">
+                                    <div className="font-medium text-gray-900">
+                                      {productId ? (
+                                        <Link
+                                          to={`/admin/products/${productId}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          {product?.name}
+                                        </Link>
+                                      ) : (
+                                        <span>{product?.name}</span>
+                                      )}
+                                      <span className="ml-1 text-gray-500">- {item.product_variant?.size}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600 mt-0.5">
+                                      {item.quantity}x {formatCurrency(item.unit_price)}
+                                    </div>
+                                    {item.item_discount > 0 && (
+                                      <div className="text-xs text-red-600 mt-0.5">
+                                        Desc. item: -Bs {item.item_discount.toFixed(2)}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </td>
                         <td className="py-3 px-4">

@@ -5,7 +5,7 @@ import { PaymentType, UserRole, DropStatus, CashRegisterStatus, MovementType } f
 export const CATEGORIES = [
   'Poleras',
   'Soleras',
-  'Sudaderas',
+  'Hoodies',
   'Pantalones',
   'Bermudas',
   'Accesorios',
@@ -33,7 +33,7 @@ export type Size = (typeof SIZES)[number]
 export const SIZES_BY_CATEGORY: Record<string, readonly string[]> = {
   Poleras: ['XS', 'S', 'M', 'L', 'XL'],
   Soleras: ['XS', 'S', 'M', 'L', 'XL'],
-  Sudaderas: ['XS', 'S', 'M', 'L', 'XL'],
+  Hoodies: ['XS', 'S', 'M', 'L', 'XL'],
   Pantalones: ['38', '40', '42', '44', '46'],
   Bermudas: ['38', '40', '42', '44', '46'],
   Accesorios: ['TALLA UNICA'],

@@ -41,3 +41,4 @@ apps/backend/prisma/migrations/
 *.swp
 *.swo
 *~
+*.mov

@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import Input from '../ui/Input';
 import { PaymentType, PaymentDetails } from '../../lib/types';
 import Toast from '../ui/Toast';
+import { formatCurrency } from '../../lib/utils';
 
 interface PaymentModalProps {
   onClose: () => void;
@@ -117,7 +118,7 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
           {/* Total */}
           <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
             <div className="text-xs sm:text-sm text-gray-600">Total a pagar</div>
-            <div className="text-2xl sm:text-3xl font-bold">Bs {total.toFixed(2)}</div>
+            <div className="text-2xl sm:text-3xl font-bold">{formatCurrency(total)}</div>
           </div>
 
           {/* Celular del Cliente */}
@@ -169,7 +170,7 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-700">Cambio</div>
                   <div className="text-2xl font-bold text-green-700">
-                    Bs {calculateChange().toFixed(2)}
+                    {formatCurrency(calculateChange())}
                   </div>
                 </div>
               )}
@@ -223,7 +224,7 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
               <div className="flex justify-between text-sm">
                 <span>Suma:</span>
                 <span className={validateMixedPayment() ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
-                  Bs {((mixedPayment.efectivo || 0) + (mixedPayment.qr || 0) + (mixedPayment.tarjeta || 0)).toFixed(2)}
+                  {formatCurrency((mixedPayment.efectivo || 0) + (mixedPayment.qr || 0) + (mixedPayment.tarjeta || 0))}
                 </span>
               </div>
             </div>
@@ -236,7 +237,7 @@ export function PaymentModal({ onClose, onSuccess }: PaymentModalProps) {
                 <div className="text-sm font-semibold text-purple-700">Modo Regalo</div>
               </div>
               <p className="text-xs text-purple-600">
-                Esta venta se registrará sin costo (Bs 0.00) pero descontará el stock normalmente.
+                Esta venta se registrará sin costo ({formatCurrency(0)}) pero descontará el stock normalmente.
                 Ideal para obsequios, promociones o muestras gratuitas.
               </p>
             </div>
