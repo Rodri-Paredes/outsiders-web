@@ -173,30 +173,30 @@ export const cashService = {
 
       if (mvError) throw mvError;
 
-      // Calcular totales
-      const total_cash = movements
-        ?.filter(m => m.payment_type === 'EFECTIVO')
-        .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      // Calcular totales — solo movimientos de ventas (excluir apertura/retiros/depósitos manuales)
+      const salesMovements = movements?.filter(m => m.reference_type === 'SALE') ?? [];
+
+      const total_cash = salesMovements
+        .filter(m => m.payment_type === 'EFECTIVO')
+        .reduce((sum, m) => sum + Number(m.amount), 0);
       
-      const total_qr = movements
-        ?.filter(m => m.payment_type === 'QR')
-        .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const total_qr = salesMovements
+        .filter(m => m.payment_type === 'QR')
+        .reduce((sum, m) => sum + Number(m.amount), 0);
       
-      const total_card = movements
-        ?.filter(m => m.payment_type === 'TARJETA')
-        .reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const total_card = salesMovements
+        .filter(m => m.payment_type === 'TARJETA')
+        .reduce((sum, m) => sum + Number(m.amount), 0);
       
-      const total_general = movements?.reduce((sum, m) => sum + Number(m.amount), 0) || 0;
+      const total_sales = salesMovements.reduce((sum, m) => sum + Number(m.amount), 0);
       
-      const sales_count = new Set(
-        movements?.filter(m => m.reference_type === 'SALE').map(m => m.reference_id)
-      ).size;
+      const sales_count = new Set(salesMovements.map(m => m.reference_id)).size;
 
       return {
         total_cash,
         total_qr,
         total_card,
-        total_general,
+        total_sales,
         sales_count,
         opening_amount: Number(cashRegister.opening_amount)
       };

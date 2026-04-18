@@ -7,19 +7,17 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
-import { BestSellersConfig } from '@/services/cms.service';
+import { NewInConfig } from '@/services/cms.service';
 
 interface Props {
-  config: BestSellersConfig;
+  config: NewInConfig;
 }
 
-export function BestSellers({ config }: Props) {
+export function NewIn({ config }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     loadProducts();
   }, []);
 
@@ -28,7 +26,6 @@ export function BestSellers({ config }: Props) {
       const ids = config?.product_ids ?? [];
 
       if (ids.length > 0) {
-        // Fetch the specific curated products
         const { data } = await supabase
           .from('products')
           .select(`
@@ -42,14 +39,11 @@ export function BestSellers({ config }: Props) {
           .eq('is_visible', true);
 
         if (data && data.length > 0) {
-          // Maintain CMS order & compute stock
           const mapped = ids
-            .map(id => data.find(p => p.id === id))
+            .map(id => data.find((p: any) => p.id === id))
             .filter(Boolean)
-            .map(p => {
-              let totalStock = 0;
+            .map((p: any) => {
               let parsedImages: string[] = [];
-
               if (Array.isArray(p.images)) parsedImages = p.images;
               else if (typeof p.images === 'string') {
                 try { parsedImages = JSON.parse(p.images); } catch {
@@ -58,6 +52,7 @@ export function BestSellers({ config }: Props) {
               }
               if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
 
+              let totalStock = 0;
               (p.variants || []).forEach((v: any) => {
                 (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
               });
@@ -70,22 +65,47 @@ export function BestSellers({ config }: Props) {
         }
       }
 
-      // Fallback: most recent products
-      const data = await productsService.getProducts();
-      setProducts(data.slice(0, 5));
+      // Fallback: los más recientes por created_at
+      const { data } = await supabase
+        .from('products')
+        .select(`
+          *,
+          variants:product_variants(
+            *,
+            stock(*)
+          )
+        `)
+        .eq('is_visible', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const mapped = (data || []).map((p: any) => {
+        let parsedImages: string[] = [];
+        if (Array.isArray(p.images)) parsedImages = p.images;
+        else if (typeof p.images === 'string') {
+          try { parsedImages = JSON.parse(p.images); } catch {
+            parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.trim().replace(/^"|"$/g, '')).filter(Boolean);
+          }
+        }
+        if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
+
+        let totalStock = 0;
+        (p.variants || []).forEach((v: any) => {
+          (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
+        });
+
+        return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
+      });
+
+      setProducts(mapped);
     } catch (err) {
-      console.error('[BestSellers] Error loading products:', err);
-      // Silent fallback
-      try {
-        const data = await productsService.getProducts();
-        setProducts(data.slice(0, 5));
-      } catch {}
+      console.error('[NewIn] Error loading products:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const sectionTitle = config?.title || 'Best Sellers';
+  const sectionTitle = config?.title || 'New In';
 
   if (loading) {
     return (
@@ -111,7 +131,7 @@ export function BestSellers({ config }: Props) {
   if (products.length === 0) return null;
 
   return (
-    <section id="best-sellers" className="py-16 md:py-20 bg-white">
+    <section id="new-in" className="py-16 md:py-20 bg-white">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}

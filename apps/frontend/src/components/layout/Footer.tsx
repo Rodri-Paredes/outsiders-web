@@ -1,31 +1,37 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Instagram, Facebook, Mail, Phone, MapPin } from 'lucide-react';
 
-const WHATSAPP_NUMBER = '59164884458';
+const BRANCHES_CONTACT = [
+  { city: 'Cochabamba', phone: '59164884458', display: '+591 64884458' },
+  { city: 'Santa Cruz', phone: '59176978023', display: '+591 76978023' },
+];
 
 export function Footer() {
-  const handleWhatsApp = () => {
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}`, '_blank');
-  };
-
   return (
     <footer className="bg-dark-card border-t border-white/10 mt-32">
       <div className="container-custom py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="col-span-1">
-            <h3 className="text-3xl font-light text-white tracking-[0.3em] mb-4 uppercase">OUTSIDERS</h3>
-            <p className="text-sm text-gray-light font-light leading-relaxed mb-6">
-              Streetwear de calidad para los que marcan tendencia.
+            <Image
+              src="/logos/logo inferior web.png"
+              alt="OUTSIDERS"
+              width={180}
+              height={60}
+              className="h-10 w-auto mb-4 brightness-0 invert"
+            />
+            <p className="text-sm text-white font-light leading-relaxed mb-6">
+              Siguenos en nuestras redes sociales.
             </p>
             <div className="flex gap-4">
               <a
                 href="https://www.instagram.com/outsiders_brand/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                className="text-white hover:text-white/60 transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="w-5 h-5" />
@@ -34,7 +40,7 @@ export function Footer() {
                 href="https://www.facebook.com/p/Outsiders-Brand-61563886501950/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                className="text-white hover:text-white/60 transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook className="w-5 h-5" />
@@ -43,7 +49,7 @@ export function Footer() {
                 href="https://www.tiktok.com/@outsiders.bo"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                className="text-white hover:text-white/60 transition-colors"
                 aria-label="TikTok"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -55,15 +61,15 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h4 className="text-xs font-medium text-white mb-6 uppercase tracking-[0.25em]">Tienda</h4>
+            <h4 className="text-xs font-bold text-white mb-6 uppercase tracking-[0.25em]">Tienda</h4>
             <ul className="space-y-3">
               <li>
-                <Link href="/shop" className="text-sm text-gray-light hover:text-white transition-colors font-light">
+                <Link href="/shop" className="text-sm text-white hover:text-white/70 transition-colors font-light">
                   Todos los Productos
                 </Link>
               </li>
               <li>
-                <Link href="/cart" className="text-sm text-gray-light hover:text-white transition-colors font-light">
+                <Link href="/cart" className="text-sm text-white hover:text-white/70 transition-colors font-light">
                   Carrito de Compras
                 </Link>
               </li>
@@ -72,29 +78,29 @@ export function Footer() {
 
           {/* Contact & Branches */}
           <div className="lg:col-span-2">
-            <h4 className="text-xs font-medium text-white mb-6 uppercase tracking-[0.25em]">Contacto & Sucursales</h4>
+            <h4 className="text-xs font-bold text-white mb-6 uppercase tracking-[0.25em]">Contacto & Sucursales</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               {/* Branches Column */}
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-light mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-5 h-5 text-white mt-0.5 flex-shrink-0" />
                   <a
                     href="https://maps.app.goo.gl/mXpEFRJ5z2CXwd2Y8"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-light hover:text-white transition-colors font-light leading-relaxed"
+                    className="text-sm text-white hover:text-white/70 transition-colors font-light leading-relaxed"
                   >
                     Av. Potosí 1384, entre Av. Portales y Pedro Blanco<br />
                     <span className="font-medium text-white/70 text-xs uppercase tracking-widest mt-1 block">Cochabamba</span>
                   </a>
                 </li>
                 <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-light mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-5 h-5 text-white mt-0.5 flex-shrink-0" />
                   <a
                     href="https://maps.app.goo.gl/MNdXKaCzUu9VS8Zf9"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-gray-light hover:text-white transition-colors font-light leading-relaxed"
+                    className="text-sm text-white hover:text-white/70 transition-colors font-light leading-relaxed"
                   >
                     Av. Busch 970, entre 2 y 3 anillo<br />
                     <span className="font-medium text-white/70 text-xs uppercase tracking-widest mt-1 block">Santa Cruz</span>
@@ -104,20 +110,25 @@ export function Footer() {
 
               {/* Direct Contact Column */}
               <ul className="space-y-4">
+                {BRANCHES_CONTACT.map((b) => (
+                  <li key={b.city} className="flex items-start gap-3">
+                    <Phone className="w-4 h-4 text-white mt-1 flex-shrink-0" />
+                    <a
+                      href={`https://wa.me/${b.phone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-white hover:text-white/70 transition-colors font-light text-left"
+                    >
+                      {b.display}
+                      <span className="block text-[10px] text-white/50 uppercase tracking-widest mt-0.5">{b.city}</span>
+                    </a>
+                  </li>
+                ))}
                 <li className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 text-gray-light mt-1 flex-shrink-0" />
-                  <button
-                    onClick={handleWhatsApp}
-                    className="text-sm text-gray-light hover:text-white transition-colors font-light text-left"
-                  >
-                    +591 64884458
-                  </button>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Mail className="w-4 h-4 text-gray-light mt-1 flex-shrink-0" />
+                  <Mail className="w-4 h-4 text-white mt-1 flex-shrink-0" />
                   <a
                     href="mailto:outsidersbrandstudios@gmail.com"
-                    className="text-sm text-gray-light hover:text-white transition-colors font-light break-all"
+                    className="text-sm text-white hover:text-white/70 transition-colors font-light break-all"
                   >
                     outsidersbrandstudios@gmail.com
                   </a>
@@ -129,11 +140,11 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-gray-medium font-light tracking-wider">
+          <p className="text-xs text-white font-light tracking-wider">
             © 2026 OUTSIDERS. Todos los derechos reservados.
           </p>
           <div className="flex items-center gap-6">
-            <span className="text-xs text-gray-medium font-light tracking-wider uppercase">Envíos a todo Bolivia</span>
+            <span className="text-xs text-white font-light tracking-wider uppercase">Envíos a todo Bolivia</span>
           </div>
         </div>
       </div>

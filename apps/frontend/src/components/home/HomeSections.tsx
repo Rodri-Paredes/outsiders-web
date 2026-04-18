@@ -165,13 +165,7 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                         </div>
                       )}
 
-                      {product.original_price && product.discount_percentage && product.discount_percentage > 0 && (
-                        <div className="absolute top-2 left-2 z-10">
-                          <span className="inline-block px-2 py-1 bg-black text-white text-[9px] font-bold uppercase tracking-widest">
-                            -{product.discount_percentage}%
-                          </span>
-                        </div>
-                      )}
+
 
                       {!(product as any).hasStock && (
                         <div className="absolute top-2 right-2 z-10">

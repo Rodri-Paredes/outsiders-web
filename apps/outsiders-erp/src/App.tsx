@@ -20,6 +20,8 @@ const DropsPage = lazy(() => import('@/pages/DropsPage').then(m => ({ default: m
 const CmsPage = lazy(() => import('@/pages/CmsPage'))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'))
 const DiscountsPage = lazy(() => import('@/pages/DiscountsPage').then(m => ({ default: m.DiscountsPage })))
+const UsersPage = lazy(() => import('@/pages/UsersPage').then(m => ({ default: m.UsersPage })))
+const SizeGuidesPage = lazy(() => import('@/pages/SizeGuidesPage').then(m => ({ default: m.SizeGuidesPage })))
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -50,6 +52,19 @@ function BranchRequiredRoute({ children }: { children: React.ReactNode }) {
 
   if (!activeBranch) {
     return <Navigate to="/branch-selection" replace />
+  }
+
+  return <>{children}</>
+}
+
+// Admin-only route — redirects vendedores to /sales
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAdmin, isLoading } = useAuth()
+
+  if (isLoading) return null
+
+  if (!isAdmin) {
+    return <Navigate to="/sales" replace />
   }
 
   return <>{children}</>
@@ -98,13 +113,16 @@ function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="sales" element={<SalesPage />} />
+            {/* Admin-only routes */}
             <Route path="products" element={<ProductsPage />} />
             <Route path="stock" element={<StockPage />} />
             <Route path="cash" element={<CashPage />} />
-            <Route path="drops" element={<DropsPage />} />
-            <Route path="cms" element={<CmsPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="discounts" element={<DiscountsPage />} />
+            <Route path="drops" element={<AdminRoute><DropsPage /></AdminRoute>} />
+            <Route path="cms" element={<AdminRoute><CmsPage /></AdminRoute>} />
+            <Route path="reports" element={<AdminRoute><ReportsPage /></AdminRoute>} />
+            <Route path="discounts" element={<AdminRoute><DiscountsPage /></AdminRoute>} />
+            <Route path="users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+            <Route path="size-guides" element={<AdminRoute><SizeGuidesPage /></AdminRoute>} />
           </Route>
 
           {/* Catch all */}

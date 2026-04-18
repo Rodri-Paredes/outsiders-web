@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useAuth } from '../hooks/useAuth';
 import { reportService } from '../services/reportService';
 import { excelService } from '../services/excelService';
 import Card from '../components/ui/Card';
@@ -28,6 +29,7 @@ export default function ReportsPage() {
   });
 
   const { activeBranch } = useAuthStore();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     if (activeBranch) {
@@ -70,7 +72,7 @@ export default function ReportsPage() {
       excelService.exportSalesReport(salesData, {
         startDate: dateRange.startDate,
         endDate: dateRange.endDate
-      });
+      }, { includeFinancials: isAdmin });
       Toast.success('Reporte exportado a Excel correctamente');
     } catch (error) {
       console.error('Error exportando a Excel:', error);

@@ -197,6 +197,7 @@ export const productService = {
       if (product.images) insertData.images = product.images;
       if (product.drop_id) insertData.drop_id = product.drop_id;
       if ((product as any).sku) insertData.sku = (product as any).sku;
+      if ((product as any).is_new_in !== undefined) insertData.is_new_in = (product as any).is_new_in;
 
       // Only include discount fields if they have values
       if (product.original_price != null && product.original_price > 0) {

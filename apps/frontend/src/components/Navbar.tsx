@@ -8,7 +8,8 @@ import { useCartStore } from '@/store/cartStore';
 import { SearchOverlay } from './layout/SearchOverlay';
 import { useBranch } from '@/contexts/BranchContext';
 
-const WHATSAPP_NUMBER = '59164884458';
+const WHATSAPP_CBB = '59164884458';
+const WHATSAPP_SCZ = '59176978023';
 
 const BANNER_TEXTS = [
   "STREETWEAR STATEMENT",
@@ -62,8 +63,9 @@ export default function Navbar() {
   }, [mounted]);
 
   const handleWhatsApp = () => {
+    const number = selectedBranch?.phone ?? WHATSAPP_CBB;
     const message = encodeURIComponent('Hola! Me gustaría obtener más información sobre sus productos.');
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${number}?text=${message}`, '_blank');
   };
 
   return (
@@ -88,7 +90,7 @@ export default function Navbar() {
             {/* Left - Navigation (Desktop) */}
             <nav className="hidden md:flex items-center gap-6 text-[10px] tracking-normal font-medium uppercase">
               <Link
-                href="/#best-sellers"
+                href="/best-sellers"
                 className="text-black hover:text-gray-600 transition-colors"
               >
                 BEST SELLERS
@@ -150,31 +152,39 @@ export default function Navbar() {
                         </div>
                       </div>
 
-                      {/* Hoodies with Sub-Menu Flyout */}
-                      <div className="group/hoodies relative">
-                        <Link href="/shop?category=Hoodies" className="flex items-center justify-between px-6 py-2.5 text-[11px] text-gray-600 hover:text-black transition-all hover:pl-7">
-                          <span>Hoodies</span>
-                          <span className="text-[8px] text-gray-300 group-hover/hoodies:text-black transition-colors">►</span>
+                      {/* Sudaderas with Sub-Menu Flyout */}
+                      <div className="group/sudaderas relative">
+                        <Link href="/shop?category=Sudaderas" className="flex items-center justify-between px-6 py-2.5 text-[11px] text-gray-600 hover:text-black transition-all hover:pl-7">
+                          <span>Sudaderas</span>
+                          <span className="text-[8px] text-gray-300 group-hover/sudaderas:text-black transition-colors">►</span>
                         </Link>
-                        <div className="absolute left-full top-0 ml-0 opacity-0 invisible group-hover/hoodies:opacity-100 group-hover/hoodies:visible transition-all duration-300">
+                        <div className="absolute left-full top-0 ml-0 opacity-0 invisible group-hover/sudaderas:opacity-100 group-hover/sudaderas:visible transition-all duration-300">
                           <div className="bg-white border border-gray-100 shadow-xl min-w-[170px] py-2 ml-0.5">
-                            <Link href="/shop?category=Hoodies&tag=Básica" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Básicas</Link>
-                            <Link href="/shop?category=Hoodies&tag=Estampada" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Estampadas</Link>
+                            <Link href="/shop?category=Hoodies" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Hoodies</Link>
+                            <Link href="/shop?category=Quarter Zip" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Quarter Zip</Link>
                           </div>
                         </div>
                       </div>
-                      <Link href="/shop?category=Pantalones" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
-                        Pantalones
-                      </Link>
+
+                      {/* Pantalones with Sub-Menu Flyout */}
+                      <div className="group/pantalones relative">
+                        <Link href="/shop?category=Pantalones" className="flex items-center justify-between px-6 py-2.5 text-[11px] text-gray-600 hover:text-black transition-all hover:pl-7">
+                          <span>Pantalones</span>
+                          <span className="text-[8px] text-gray-300 group-hover/pantalones:text-black transition-colors">►</span>
+                        </Link>
+                        <div className="absolute left-full top-0 ml-0 opacity-0 invisible group-hover/pantalones:opacity-100 group-hover/pantalones:visible transition-all duration-300">
+                          <div className="bg-white border border-gray-100 shadow-xl min-w-[170px] py-2 ml-0.5">
+                            <Link href="/shop?category=Jeans" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Jeans</Link>
+                            <Link href="/shop?category=Jogger" className="block px-5 py-2.5 text-[10px] text-gray-500 hover:text-black hover:bg-gray-50 transition-all uppercase tracking-widest">Jogger</Link>
+                          </div>
+                        </div>
+                      </div>
                       <Link href="/shop?category=Bermudas" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
                         Bermudas
                       </Link>
                       <div className="h-px w-full bg-gray-100 my-1"></div>
                       <Link href="/shop?category=Accesorios" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
                         Accesorios
-                      </Link>
-                      <Link href="/shop?category=Gorras" className="px-6 py-2.5 text-[11px] text-gray-600 hover:text-black hover:pl-8 transition-all">
-                        Gorras
                       </Link>
                     </div>
                   </div>
@@ -208,7 +218,7 @@ export default function Navbar() {
               aria-label="Volver al inicio"
             >
               <img
-                src="/logos/logo-negro.png"
+                src="/logos/navbar-logo-negro.png"
                 alt="OUTSIDERS"
                 width="120"
                 height="40"
@@ -271,7 +281,7 @@ export default function Navbar() {
             <div className="md:hidden py-4 border-t border-gray-200 bg-white">
               <nav className="flex flex-col gap-4 px-4">
                 <Link
-                  href="/#best-sellers"
+                  href="/best-sellers"
                   className="text-[11px] tracking-[0.2em] font-medium uppercase text-black hover:text-gray-600 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -284,13 +294,26 @@ export default function Navbar() {
                 >
                   SPECIAL PRICES
                 </Link>
-                <Link
-                  href="/shop"
-                  className="text-[11px] tracking-[0.2em] font-medium uppercase text-black hover:text-gray-600 transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+
+                {/* Shop Accordion */}
+                <button
+                  onClick={() => setShopMenuOpen(!shopMenuOpen)}
+                  className="flex items-center justify-between text-[11px] tracking-[0.2em] font-medium uppercase text-black"
                 >
-                  PRODUCTOS
-                </Link>
+                  <span>PRODUCTOS</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${shopMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {shopMenuOpen && (
+                  <div className="flex flex-col gap-2 pl-4 -mt-2">
+                    <Link href="/shop" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Ver Todo</Link>
+                    <Link href="/shop?category=Poleras" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Poleras</Link>
+                    <Link href="/shop?category=Soleras" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Soleras</Link>
+                    <Link href="/shop?category=Sudaderas" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Sudaderas</Link>
+                    <Link href="/shop?category=Pantalones" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Pantalones</Link>
+                    <Link href="/shop?category=Bermudas" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Bermudas</Link>
+                    <Link href="/shop?category=Accesorios" className="text-[10px] tracking-[0.15em] font-medium uppercase text-gray-500 hover:text-black" onClick={() => setMobileMenuOpen(false)}>Accesorios</Link>
+                  </div>
+                )}
                 <Link
                   href="/stores"
                   className="text-[11px] tracking-[0.2em] font-medium uppercase text-black hover:text-gray-600 transition-colors"

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useCart } from '../CartProvider';
 
@@ -41,18 +42,23 @@ export function Navbar() {
               Shop
             </Link>
             <Link 
-              href="/shop" 
+              href="/best-sellers" 
               className="text-xs tracking-widest uppercase text-white hover:text-gray-light transition-colors"
             >
-              Products
+              Best Sellers
             </Link>
           </nav>
 
           {/* Center - Logo */}
           <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            <span className="text-xl md:text-2xl font-light tracking-[0.25em] uppercase text-white">
-              OUTSIDERS
-            </span>
+            <Image
+              src="/logos/navbar-logo-negro.png"
+              alt="OUTSIDERS"
+              width={180}
+              height={50}
+              className="h-8 md:h-10 w-auto brightness-0 invert"
+              priority
+            />
           </Link>
 
           {/* Right - Actions */}

@@ -184,7 +184,7 @@ export const reportService = {
             product_variant:product_variants(
               product_id,
               size,
-              product:products(id, name, image_url, images)
+              product:products(id, name, image_url, images, cost_price)
             )
           )
         `)

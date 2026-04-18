@@ -1,10 +1,11 @@
 import { formatCurrency } from '../../lib/utils';
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent } from 'lucide-react';
+import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock } from 'lucide-react';
 import { Product, ProductTag } from '../../lib/types';
 import { productService } from '../../services/productService';
 import { stockService } from '../../services/stockService';
 import { useAuthStore } from '../../store/authStore';
+import { useAuth } from '../../hooks/useAuth';
 import { CATEGORIES, SIZES, SIZES_BY_CATEGORY } from '../../lib/constants';
 import { Button } from '../ui/Button';
 import Input from '../ui/Input';
@@ -26,15 +27,18 @@ interface SizeWithStock {
 
 export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const { activeBranch } = useAuthStore();
+  const { isAdmin } = useAuth();
   
   const [formData, setFormData] = useState({
     name: product?.name || '',
     description: product?.description || '',
     category: product?.category || '',
     price: product?.price || 0,
+    cost_price: product?.cost_price || null as number | null,
     original_price: product?.original_price || null as number | null,
     discount_percentage: product?.discount_percentage || null as number | null,
     sku: (product as any)?.sku || '',
+    is_new_in: product?.is_new_in ?? false,
   });
 
   const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
@@ -149,7 +153,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' || name === 'original_price' || name === 'discount_percentage' 
+      [name]: name === 'price' || name === 'original_price' || name === 'discount_percentage' || name === 'cost_price'
         ? (value === '' ? null : parseFloat(value) || 0)
         : value,
     }));
@@ -309,8 +313,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         images: imageUrls.length > 0 ? imageUrls : null,
         image_url: imageUrls[0] || null,
         is_visible: true,
+        is_new_in: formData.is_new_in,
         original_price: formData.original_price || null,
         discount_percentage: formData.discount_percentage || null,
+        // Solo admins pueden guardar/modificar el precio de costo
+        cost_price: isAdmin ? (formData.cost_price || null) : undefined,
       };
 
       let savedProduct: Product;
@@ -489,6 +496,20 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 required
               />
 
+              {/* NEW IN toggle */}
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, is_new_in: !prev.is_new_in }))}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${formData.is_new_in ? 'bg-black' : 'bg-gray-200'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.is_new_in ? 'left-5' : 'left-1'}`} />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Marcar como <span className="font-bold text-black">NEW IN</span>
+                  <span className="ml-2 text-xs text-gray-400">(muestra badge en tienda)</span>
+                </span>
+              </label>
+
               {/* ===== SECCIÓN DE PRECIOS Y DESCUENTOS ===== */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -585,6 +606,47 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   </>
                 )}
               </div>
+
+              {/* ===== PRECIO DE COSTO (Solo Admin) ===== */}
+              {isAdmin && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                  <h4 className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                    <Lock size={14} />
+                    Información Privada (Solo Administrador)
+                  </h4>
+                  <div>
+                    <label className="block text-xs font-medium text-amber-800 mb-1">
+                      Precio de Costo (Bs.)
+                    </label>
+                    <input
+                      type="number"
+                      name="cost_price"
+                      step="0.01"
+                      min="0"
+                      value={formData.cost_price ?? ''}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white"
+                      placeholder="0.00"
+                    />
+                    {formData.cost_price != null && formData.cost_price > 0 && formData.price > 0 && (
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
+                          <span className="text-amber-600 block">Utilidad por unidad</span>
+                          <span className="font-bold text-amber-900">
+                            Bs. {(formData.price - formData.cost_price).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
+                          <span className="text-amber-600 block">Margen</span>
+                          <span className="font-bold text-amber-900">
+                            {(((formData.price - formData.cost_price) / formData.price) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* ===== SECCIÓN DE TAGS/ATRIBUTOS ===== */}
               {formData.category && availableTags.length > 0 && (

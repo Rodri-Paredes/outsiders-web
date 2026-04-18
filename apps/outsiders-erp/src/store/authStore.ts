@@ -71,7 +71,9 @@ export const useAuthStore = create<AuthState>()(
           
           const { error } = await supabase.auth.signOut()
           
-          if (error) throw error
+          // "Auth session missing" significa que la sesión ya expiró/fue invalidada.
+          // En ese caso limpiamos el estado local igualmente.
+          if (error && !error.message.includes('session')) throw error
 
           set({
             user: null,

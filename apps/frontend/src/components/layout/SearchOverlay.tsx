@@ -2,41 +2,45 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { Search, X, ArrowRight } from 'lucide-react';
 
 interface SearchOverlayProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+const POPULAR_TERMS = ['Hoodies', 'Poleras', 'Pantalones', 'Accesorios'];
+
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     const [query, setQuery] = useState('');
+    const [visible, setVisible] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
-    // Handle escape key
+    // Animate in/out
+    useEffect(() => {
+        if (isOpen) {
+            setVisible(true);
+            setTimeout(() => inputRef.current?.focus(), 150);
+        } else {
+            setVisible(false);
+            setQuery('');
+        }
+    }, [isOpen]);
+
+    // Escape key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
-        if (isOpen) {
-            window.addEventListener('keydown', handleKeyDown);
-            // Focus input after auto-focusing animation
-            setTimeout(() => inputRef.current?.focus(), 100);
-        }
+        if (isOpen) window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    // Lock body scroll
+    // Lock scroll
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'auto';
-        }
-        return () => {
-            document.body.style.overflow = 'auto';
-        };
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
     }, [isOpen]);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -44,64 +48,98 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         if (query.trim()) {
             router.push(`/shop?q=${encodeURIComponent(query.trim())}`);
             onClose();
-            setQuery(''); // reset
         }
+    };
+
+    const handleTermClick = (term: string) => {
+        router.push(`/shop?q=${encodeURIComponent(term)}`);
+        onClose();
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-sm flex flex-col animate-fadeIn">
-            {/* Header Close Button */}
-            <div className="flex justify-end p-6 md:p-10">
-                <button
-                    onClick={onClose}
-                    className="text-black hover:scale-110 transition-transform flex items-center gap-2"
-                >
-                    <span className="text-xs font-bold uppercase tracking-widest hidden md:block">Cerrar</span>
-                    <X className="w-8 h-8 md:w-10 md:h-10" strokeWidth={1} />
-                </button>
-            </div>
+        <div
+            className={`fixed inset-0 z-[200] flex flex-col transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        >
+            {/* Backdrop — click to close */}
+            <div
+                className="absolute inset-0 bg-white"
+                onClick={onClose}
+            />
 
-            {/* Main Search Area */}
-            <div className="flex-1 flex flex-col items-center justify-center px-4 md:px-0 -mt-20">
-                <div className="w-full max-w-4xl mx-auto">
-                    <form onSubmit={handleSubmit} className="relative group">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            placeholder="¿QUÉ ESTÁS BUSCANDO?"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            className="w-full bg-transparent border-b-2 border-gray-200 text-3xl md:text-5xl lg:text-7xl font-bold uppercase tracking-tighter text-black placeholder-gray-300 pb-4 md:pb-8 focus:outline-none focus:border-black transition-colors"
-                        />
-                        <button
-                            type="submit"
-                            className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-black transition-colors hover:scale-110"
-                            aria-label="Buscar"
-                        >
-                            <Search className="w-8 h-8 md:w-12 md:h-12" strokeWidth={2} />
-                        </button>
+            {/* Content */}
+            <div className="relative z-10 flex flex-col h-full">
+
+                {/* Top bar */}
+                <div className="flex items-center justify-between px-5 md:px-10 h-16 md:h-20 border-b border-gray-100">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400">
+                        Buscador
+                    </span>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Cerrar búsqueda"
+                        className="group flex items-center gap-2 text-black"
+                    >
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 group-hover:text-black transition-colors hidden md:block">
+                            Cerrar
+                        </span>
+                        <div className="w-9 h-9 flex items-center justify-center border border-gray-200 group-hover:border-black group-hover:bg-black group-hover:text-white transition-all duration-200 rounded-sm">
+                            <X className="w-4 h-4" strokeWidth={2} />
+                        </div>
+                    </button>
+                </div>
+
+                {/* Search form */}
+                <div className={`flex-1 flex flex-col justify-center px-5 md:px-16 lg:px-32 transition-all duration-500 ${visible ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}>
+                    <form onSubmit={handleSubmit} className="relative">
+                        <div className="flex items-end border-b-2 border-gray-200 focus-within:border-black transition-colors duration-300 pb-3 md:pb-5 gap-4">
+                            <Search className="w-5 h-5 md:w-7 md:h-7 text-gray-300 flex-shrink-0 mb-0.5" strokeWidth={2} />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                placeholder="Busca un producto..."
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                className="flex-1 bg-transparent text-2xl md:text-4xl lg:text-5xl font-bold text-black placeholder-gray-300 focus:outline-none tracking-tight"
+                                autoComplete="off"
+                            />
+                            {query.trim() && (
+                                <button
+                                    type="submit"
+                                    aria-label="Buscar"
+                                    className="flex-shrink-0 bg-black text-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center hover:bg-gray-800 transition-colors"
+                                >
+                                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5" strokeWidth={2.5} />
+                                </button>
+                            )}
+                        </div>
                     </form>
 
-                    {/* Quick Links / Suggestions */}
-                    <div className="mt-12 flex flex-col gap-4 animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
-                        <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-gray-400">Términos populares</span>
-                        <div className="flex flex-wrap gap-4">
-                            {['Hoodies', 'Pantalones Cargo', 'T-Shirts Oversize', 'Jackets'].map((term) => (
+                    {/* Suggestions */}
+                    <div className={`mt-8 md:mt-12 transition-all duration-500 delay-100 ${visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 mb-4">
+                            Categorías populares
+                        </p>
+                        <div className="flex flex-wrap gap-2 md:gap-3">
+                            {POPULAR_TERMS.map((term) => (
                                 <button
                                     key={term}
-                                    onClick={() => {
-                                        router.push(`/shop?q=${encodeURIComponent(term)}`);
-                                        onClose();
-                                    }}
-                                    className="px-6 py-2 border border-gray-200 rounded-full text-xs font-bold uppercase tracking-widest hover:border-black hover:bg-black hover:text-white transition-all duration-300"
+                                    type="button"
+                                    onClick={() => handleTermClick(term)}
+                                    className="px-4 py-2 border border-gray-200 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:border-black hover:bg-black hover:text-white transition-all duration-200"
                                 >
                                     {term}
                                 </button>
                             ))}
                         </div>
                     </div>
+
+                    {/* Hint */}
+                    <p className="mt-8 text-[10px] text-gray-300 uppercase tracking-widest hidden md:block">
+                        Presiona <kbd className="bg-gray-100 px-1.5 py-0.5 rounded text-gray-400 font-mono">ESC</kbd> para cerrar
+                    </p>
                 </div>
             </div>
         </div>

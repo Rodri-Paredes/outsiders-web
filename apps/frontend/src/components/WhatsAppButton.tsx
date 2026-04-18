@@ -1,13 +1,17 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { useBranch } from '@/contexts/BranchContext';
 
-const WHATSAPP_NUMBER = '59164884458'; // Reemplaza con tu número
+const WHATSAPP_CBB = '59164884458';
 
 export function WhatsAppButton() {
+  const { selectedBranch } = useBranch();
+
   const handleClick = () => {
+    const number = selectedBranch?.phone ?? WHATSAPP_CBB;
     const message = encodeURIComponent('Hola! Me gustaría obtener más información sobre sus productos.');
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+    const url = `https://wa.me/${number}?text=${message}`;
     window.open(url, '_blank');
   };
 

@@ -22,12 +22,14 @@ export interface Product {
   description: string | null
   category: string
   price: number
+  cost_price: number | null // Solo visible para administradores
   original_price: number | null
   discount_percentage: number | null
   image_url: string | null // Legacy - mantener para compatibilidad
   images: string[] | null // Nuevo campo para múltiples imágenes
   drop_id: string | null
   is_visible: boolean
+  is_new_in: boolean
   created_at: string
   tags?: ProductTagAssignment[]
 }
@@ -154,6 +156,7 @@ export interface ProductFormData {
   description?: string
   category: string
   price: number
+  cost_price?: number | null // Solo accesible para admins
   original_price?: number | null
   discount_percentage?: number | null
   image_url?: string

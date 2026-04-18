@@ -155,7 +155,7 @@ export function CashPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total</p>
-              <p className="text-2xl font-bold">Bs {summary?.total_general?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">Bs {summary?.total_sales?.toFixed(2) || '0.00'}</p>
             </div>
           </div>
         </Card>

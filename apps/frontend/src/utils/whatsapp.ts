@@ -1,6 +1,7 @@
 import { CartItem } from '@/store/cartStore';
 
-const WHATSAPP_NUMBER = '59178788416'; // Reemplaza con tu número
+const WHATSAPP_CBB = '59164884458';
+const WHATSAPP_SCZ = '59176978023';
 
 export function generateWhatsAppMessage(items: CartItem[], total: number): string {
   const header = 'Hola! Quiero hacer el siguiente pedido:\n\n';
@@ -17,10 +18,16 @@ export function generateWhatsAppMessage(items: CartItem[], total: number): strin
   return header + itemsList + footer;
 }
 
-export function sendWhatsAppOrder(items: CartItem[], total: number): void {
+export function sendWhatsAppOrder(items: CartItem[], total: number, branchPhone?: string): void {
   const message = generateWhatsAppMessage(items, total);
   const encodedMessage = encodeURIComponent(message);
-  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+  const number = branchPhone ?? WHATSAPP_CBB;
+  const url = `https://wa.me/${number}?text=${encodedMessage}`;
   
-  window.open(url, '_blank');
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    window.location.href = url;
+  } else {
+    window.open(url, '_blank');
+  }
 }

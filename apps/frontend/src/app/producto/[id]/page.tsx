@@ -9,6 +9,10 @@ import { useCartStore } from '@/store/cartStore';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBranch } from '@/contexts/BranchContext';
+import { RecommendedForYou } from '@/components/home/RecommendedForYou';
+import { useAnonId } from '@/hooks/useAnonId';
+import { recommendationsService } from '@/services/recommendations.service';
+import { sizeGuideService, SizeGuide } from '@/services/sizeGuide.service';
 
 // Sizes are now loaded dynamically from product variants
 
@@ -22,14 +26,40 @@ export default function ProductPage() {
   const [mounted, setMounted] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
   const [availableSizes, setAvailableSizes] = useState<{[key: string]: number}>({});
+  const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(null);
+  const [sizeGuideLoading, setSizeGuideLoading] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const items = useCartStore((state) => state.items);
   const { selectedBranch } = useBranch();
+  const anonId = useAnonId();
 
   useEffect(() => {
     setMounted(true);
     useCartStore.persist.rehydrate();
   }, []);
+
+  // Registrar vista del producto cuando el producto y el anon_id estén disponibles
+  useEffect(() => {
+    if (product && anonId && product.category) {
+      recommendationsService.trackView(anonId, product.id, product.category);
+    }
+  }, [product?.id, anonId]);
+
+  // Cargar guía de tallas basada en el material del producto
+  useEffect(() => {
+    if (!product) return;
+    // El material está en los tags del producto (tag_group = 'gramaje' o 'material')
+    const materialTag = product.tags?.find(
+      (t) => t.tag && (t.tag.tag_group === 'gramaje' || t.tag.tag_group === 'material')
+    );
+    if (!materialTag?.tag?.name) return;
+
+    setSizeGuideLoading(true);
+    sizeGuideService.getByMaterial(materialTag.tag.name).then((guide) => {
+      setSizeGuide(guide);
+      setSizeGuideLoading(false);
+    });
+  }, [product?.id]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -277,11 +307,18 @@ export default function ProductPage() {
 
           {/* Product Info */}
           <div className="w-full lg:w-[35%] flex flex-col lg:sticky lg:top-36">
-            {/* Category */}
+            {/* Category + NEW IN */}
             {product.category && (
-              <p className="text-xs text-gray-500 uppercase tracking-widest mb-3">
-                {product.category}
-              </p>
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-xs text-gray-500 uppercase tracking-widest">
+                  {product.category}
+                </p>
+                {(product as any).is_new_in && (
+                  <span className="inline-block px-2 py-0.5 bg-black text-white text-[9px] font-bold uppercase tracking-widest">
+                    NEW IN
+                  </span>
+                )}
+              </div>
             )}
 
             {/* Name */}
@@ -403,6 +440,16 @@ export default function ProductPage() {
         </div>
       </div>
 
+      {/* Recomendado para ti — basado en historial del usuario */}
+      {product && anonId && (
+        <RecommendedForYou
+          anonId={anonId}
+          currentProductId={product.id}
+          currentCategory={product.category}
+          branchId={selectedBranch?.id}
+        />
+      )}
+
       {/* Size Guide Modal (Left side) */}
       <div 
         className={`fixed inset-0 z-50 transition-opacity duration-300 ${
@@ -419,7 +466,12 @@ export default function ProductPage() {
           }`}
         >
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
-            <h2 className="text-[14px] font-medium tracking-widest uppercase">Guía de Tallas</h2>
+            <div>
+              <h2 className="text-[14px] font-medium tracking-widest uppercase">Guía de Tallas</h2>
+              {sizeGuide && (
+                <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-widest">{sizeGuide.material}</p>
+              )}
+            </div>
             <button 
               onClick={() => setIsSizeGuideOpen(false)}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors text-black"
@@ -431,37 +483,65 @@ export default function ProductPage() {
             <p className="text-sm text-gray-500 mb-6 leading-relaxed">
               Encuentra la talla perfecta para ti con nuestra guía de medidas. Todas las medidas están en centímetros.
             </p>
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Talla</th>
-                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Ancho</th>
-                  <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Largo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-gray-100">
-                  <td className="py-3 font-medium">S</td>
-                  <td className="py-3 text-gray-500">51</td>
-                  <td className="py-3 text-gray-500">70</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-3 font-medium">M</td>
-                  <td className="py-3 text-gray-500">54</td>
-                  <td className="py-3 text-gray-500">72</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-3 font-medium">L</td>
-                  <td className="py-3 text-gray-500">57</td>
-                  <td className="py-3 text-gray-500">75</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-3 font-medium">XL</td>
-                  <td className="py-3 text-gray-500">60</td>
-                  <td className="py-3 text-gray-500">78</td>
-                </tr>
-              </tbody>
-            </table>
+
+            {/* Imagen de referencia (si existe) */}
+            {sizeGuide?.image_url && (
+              <div className="relative w-full aspect-video mb-6 overflow-hidden rounded-lg">
+                <img src={sizeGuide.image_url} alt="Referencia de medidas" className="object-contain w-full h-full" />
+              </div>
+            )}
+
+            {sizeGuideLoading ? (
+              <div className="space-y-3">
+                {[1,2,3,4].map(i => <div key={i} className="h-8 bg-gray-100 animate-pulse rounded" />)}
+              </div>
+            ) : sizeGuide ? (
+              /* Tabla dinámica desde la base de datos */
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Talla</th>
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">{sizeGuide.col_a_label}</th>
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">{sizeGuide.col_b_label}</th>
+                    {sizeGuide.col_c_label && (
+                      <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">{sizeGuide.col_c_label}</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sizeGuide.rows.map((row) => (
+                    <tr key={row.size} className="border-b border-gray-100">
+                      <td className="py-3 font-medium">{row.size}</td>
+                      <td className="py-3 text-gray-500">{row.a}</td>
+                      <td className="py-3 text-gray-500">{row.b}</td>
+                      {sizeGuide.col_c_label && (
+                        <td className="py-3 text-gray-500">{row.c}</td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              /* Tabla genérica (fallback cuando no hay guía del material) */
+              <table className="w-full text-sm text-left">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Talla</th>
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Ancho</th>
+                    <th className="py-3 font-medium uppercase tracking-wider text-[11px] text-gray-400">Largo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[['S','51','70'],['M','54','72'],['L','57','75'],['XL','60','78']].map(([size, a, b]) => (
+                    <tr key={size} className="border-b border-gray-100">
+                      <td className="py-3 font-medium">{size}</td>
+                      <td className="py-3 text-gray-500">{a}</td>
+                      <td className="py-3 text-gray-500">{b}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>

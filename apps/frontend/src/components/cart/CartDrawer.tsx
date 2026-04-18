@@ -27,13 +27,13 @@ const CITIES = [
   'Cobija'
 ];
 
-const WHATSAPP_NUMBER = '59164884458';
+// WHATSAPP_NUMBER is now read from selectedBranch.phone (BranchContext)
 
 export function CartDrawer() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [branch, setBranch] = useState('');
-  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'shipping' | ''>('');
+  const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'shipping' | 'home_delivery' | ''>('');
   const [city, setCity] = useState('');
   const [comments, setComments] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -141,7 +141,7 @@ export function CartDrawer() {
     // Build WhatsApp message
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://outsiders.bo';
     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-    const originCity = deliveryMethod === 'pickup' ? `${branch} (Recojo en tienda)` : city;
+    const originCity = deliveryMethod === 'pickup' ? `${branch} (Recojo en tienda)` : deliveryMethod === 'home_delivery' ? 'Envío a domicilio' : city;
     
     let message = `¡Hola! 👋 Quiero realizar el siguiente pedido:\n\n`;
     message += `RESUMEN DEL PEDIDO:\n`;
@@ -157,14 +157,23 @@ export function CartDrawer() {
     }
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    const whatsappNumber = selectedBranch?.phone ?? '59164884458';
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank');
-
+    // Close drawer and clear cart first
     clearCart();
     setIsOpen(false);
-    toast.success('Pedido registrado y abriendo WhatsApp...');
+    toast.success('Pedido registrado, abriendo WhatsApp...');
+
+    // Open WhatsApp
+    // Para móviles, la apertura asíncrona de ventanas nuevas (_blank) suele ser bloqueada.
+    // Usamos location.href directo para redirigir en la misma pestaña a la app de WhatsApp
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = whatsappUrl;
+    } else {
+      window.open(whatsappUrl, '_blank');
+    }
   };
 
   return (
@@ -309,7 +318,8 @@ export function CartDrawer() {
                 <div className="flex flex-wrap gap-5">
                   {[
                     { id: 'pickup', label: 'Recoger en Tienda' },
-                    { id: 'shipping', label: 'Envío' }
+                    { id: 'shipping', label: 'Envío' },
+                    { id: 'home_delivery', label: 'Envío a domicilio' }
                   ].map((method) => (
                     <label key={method.id} className="flex items-center gap-2 cursor-pointer group">
                       <div className={`w-3.5 h-3.5 rounded-full border flex flex-shrink-0 items-center justify-center transition-colors ${deliveryMethod === method.id ? 'border-black' : 'border-gray-300 group-hover:border-black'}`}>
@@ -324,9 +334,10 @@ export function CartDrawer() {
                         value={method.id} 
                         checked={deliveryMethod === method.id} 
                         onChange={(e) => {
-                          setDeliveryMethod(e.target.value as 'pickup' | 'shipping');
+                          setDeliveryMethod(e.target.value as 'pickup' | 'shipping' | 'home_delivery');
                           if (e.target.value === 'pickup') setCity('');
                           if (e.target.value === 'shipping') setBranch('');
+                          if (e.target.value === 'home_delivery') { setCity(''); setBranch(''); }
                         }} 
                         className="hidden" 
                       />

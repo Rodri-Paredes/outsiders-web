@@ -12,8 +12,10 @@ import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import Toast from '../components/ui/Toast';
 import { useDebounce } from '../hooks/useDebounce';
+import { useAuth } from '../hooks/useAuth';
 
 export function ProductsPage() {
+  const { isAdmin } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -151,12 +153,14 @@ export function ProductsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Productos</h1>
-        <Button
-          onClick={() => setShowForm(true)}
-          icon={<Plus size={20} />}
-        >
-          Nuevo Producto
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={() => setShowForm(true)}
+            icon={<Plus size={20} />}
+          >
+            Nuevo Producto
+          </Button>
+        )}
       </div>
 
       {/* Filtros */}
@@ -266,7 +270,7 @@ export function ProductsPage() {
               : 'Comienza agregando tu primer producto'
           }
           action={
-            !search && !category && selectedTagIds.length === 0 ? (
+            isAdmin && !search && !category && selectedTagIds.length === 0 ? (
               <Button onClick={() => setShowForm(true)}>Crear Producto</Button>
             ) : undefined
           }
@@ -280,6 +284,7 @@ export function ProductsPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleVisibility={handleToggleVisibility}
+              readOnly={!isAdmin}
             />
           ))}
         </div>

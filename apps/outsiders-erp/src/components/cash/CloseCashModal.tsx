@@ -95,6 +95,12 @@ export function CloseCashModal({ cashRegister, summary, onClose, onSuccess }: Cl
                 <span>Total de ventas:</span>
                 <span>Bs {summary?.total_sales?.toFixed(2) || '0.00'}</span>
               </div>
+              {summary?.sales_count > 0 && (
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Número de ventas:</span>
+                  <span>{summary.sales_count}</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t pt-2 mt-2">

@@ -9,6 +9,7 @@ export interface BranchInfo {
   name: string;
   label: string;
   city: string;
+  phone: string;
 }
 
 export const BRANCHES: BranchInfo[] = [
@@ -17,12 +18,14 @@ export const BRANCHES: BranchInfo[] = [
     name: 'Sucursal Cochabamba',
     label: 'Cochabamba',
     city: 'Cochabamba',
+    phone: '59164884458',
   },
   {
     id: '68a8c694-c872-4814-8618-bdf02277771c',
     name: 'Sucursal Santa Cruz',
     label: 'Santa Cruz',
     city: 'Santa Cruz',
+    phone: '59176978023',
   },
 ];
 

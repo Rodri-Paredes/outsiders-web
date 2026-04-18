@@ -11,6 +11,7 @@ export interface Product {
   images?: string[]
   drop_id?: string
   is_visible: boolean
+  is_new_in?: boolean
   created_at?: string
   updated_at?: string
   variants?: ProductVariant[]

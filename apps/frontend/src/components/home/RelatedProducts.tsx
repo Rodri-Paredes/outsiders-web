@@ -5,94 +5,92 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
-import { BestSellersConfig } from '@/services/cms.service';
 
 interface Props {
-  config: BestSellersConfig;
+  currentProductId: string;
+  category: string | null | undefined;
+  branchId?: string;
 }
 
-export function BestSellers({ config }: Props) {
-  const [products, setProducts] = useState<Product[]>([]);
+function mapRelatedProduct(p: any, branchId?: string): Product & { images: string[] } {
+  let totalStock = 0;
+  let parsedImages: string[] = [];
+
+  if (Array.isArray(p.images)) {
+    parsedImages = p.images;
+  } else if (typeof p.images === 'string') {
+    try {
+      parsedImages = JSON.parse(p.images);
+    } catch {
+      parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.trim().replace(/^"|"$/g, '')).filter(Boolean);
+    }
+  }
+  if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
+
+  (p.variants || []).forEach((v: any) => {
+    (v.stock || []).forEach((s: any) => {
+      if (!branchId || s.branch_id === branchId) {
+        totalStock += s.quantity || 0;
+      }
+    });
+  });
+
+  return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 };
+}
+
+export function RelatedProducts({ currentProductId, category, branchId }: Props) {
+  const [products, setProducts] = useState<(Product & { images: string[] })[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    loadProducts();
-  }, []);
+    if (!category) {
+      setLoading(false);
+      return;
+    }
+    loadRelated();
+  }, [currentProductId, category, branchId]);
 
-  const loadProducts = async () => {
+  const loadRelated = async () => {
     try {
-      const ids = config?.product_ids ?? [];
-
-      if (ids.length > 0) {
-        // Fetch the specific curated products
-        const { data } = await supabase
-          .from('products')
-          .select(`
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          *,
+          variants:product_variants(
             *,
-            variants:product_variants(
-              *,
-              stock(*)
-            )
-          `)
-          .in('id', ids)
-          .eq('is_visible', true);
+            stock(*)
+          )
+        `)
+        .eq('category', category)
+        .eq('is_visible', true)
+        .neq('id', currentProductId)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-        if (data && data.length > 0) {
-          // Maintain CMS order & compute stock
-          const mapped = ids
-            .map(id => data.find(p => p.id === id))
-            .filter(Boolean)
-            .map(p => {
-              let totalStock = 0;
-              let parsedImages: string[] = [];
+      if (error || !data) return;
 
-              if (Array.isArray(p.images)) parsedImages = p.images;
-              else if (typeof p.images === 'string') {
-                try { parsedImages = JSON.parse(p.images); } catch {
-                  parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.trim().replace(/^"|"$/g, '')).filter(Boolean);
-                }
-              }
-              if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
+      const mapped = data
+        .map(p => mapRelatedProduct(p, branchId))
+        .filter(p => p.hasStock)
+        .slice(0, 6);
 
-              (p.variants || []).forEach((v: any) => {
-                (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
-              });
-
-              return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
-            });
-
-          setProducts(mapped as Product[]);
-          return;
-        }
-      }
-
-      // Fallback: most recent products
-      const data = await productsService.getProducts();
-      setProducts(data.slice(0, 5));
+      setProducts(mapped);
     } catch (err) {
-      console.error('[BestSellers] Error loading products:', err);
-      // Silent fallback
-      try {
-        const data = await productsService.getProducts();
-        setProducts(data.slice(0, 5));
-      } catch {}
+      console.error('[RelatedProducts] Error loading:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const sectionTitle = config?.title || 'Best Sellers';
-
   if (loading) {
     return (
-      <section className="py-16 md:py-20 bg-white">
+      <section className="py-12 md:py-16 bg-white border-t border-gray-100">
         <div className="w-full px-4 md:px-8 max-w-[1800px] mx-auto">
           <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-            <h2 className="text-xl md:text-2xl font-bold text-black tracking-tighter uppercase">{sectionTitle}</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-black tracking-tighter uppercase">
+              También te puede gustar
+            </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {[1, 2, 3, 4, 5].map(i => (
@@ -111,7 +109,7 @@ export function BestSellers({ config }: Props) {
   if (products.length === 0) return null;
 
   return (
-    <section id="best-sellers" className="py-16 md:py-20 bg-white">
+    <section className="py-12 md:py-16 bg-white border-t border-gray-100">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -120,12 +118,14 @@ export function BestSellers({ config }: Props) {
         className="w-full px-4 md:px-8 max-w-[1800px] mx-auto"
       >
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-          <h2 className="text-xl md:text-2xl font-bold text-black tracking-tighter uppercase">{sectionTitle}</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-black tracking-tighter uppercase">
+            También te puede gustar
+          </h2>
           <Link
             href="/shop"
             className="px-4 py-2 bg-gray-100 text-black text-[10px] md:text-xs font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors rounded-sm"
           >
-            View All
+            Ver todo
           </Link>
         </div>
 
@@ -141,7 +141,6 @@ export function BestSellers({ config }: Props) {
         >
           {products.map(product => {
             const slug = `${product.id}-${product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-            const images = (product as any).images || [product.image_url].filter(Boolean);
 
             return (
               <motion.div
@@ -151,11 +150,11 @@ export function BestSellers({ config }: Props) {
                   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
                 }}
               >
-                <Link href={`/producto/${slug}`} className="group cursor-pointer block flex flex-col h-full" prefetch={true}>
+                <Link href={`/producto/${slug}`} className="group cursor-pointer block flex flex-col h-full">
                   <div className="aspect-[4/5] bg-[#f5f5f5] w-full relative overflow-hidden mb-3">
-                    {images[0] ? (
+                    {product.images[0] ? (
                       <Image
-                        src={images[0]}
+                        src={product.images[0]}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
@@ -168,8 +167,11 @@ export function BestSellers({ config }: Props) {
                         {product.name.charAt(0)}
                       </div>
                     )}
-
-
+                    {product.discount_percentage && product.discount_percentage > 0 ? (
+                      <span className="absolute top-2 left-2 bg-black text-white text-[9px] font-bold uppercase tracking-widest px-2 py-1">
+                        -{product.discount_percentage}%
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="flex justify-between items-start w-full px-1 mt-auto">
@@ -179,7 +181,9 @@ export function BestSellers({ config }: Props) {
                       </h3>
                       {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-gray-400 line-through">Bs. {Number(product.original_price).toFixed(2)}</span>
+                          <span className="text-[10px] text-gray-400 line-through">
+                            Bs. {Number(product.original_price).toFixed(2)}
+                          </span>
                           <span className="text-[10px] md:text-[11px] font-bold text-black">
                             Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
                           </span>
@@ -190,9 +194,6 @@ export function BestSellers({ config }: Props) {
                         </span>
                       )}
                     </div>
-                    {!(product as any).hasStock && (
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sold Out</span>
-                    )}
                   </div>
                 </Link>
               </motion.div>

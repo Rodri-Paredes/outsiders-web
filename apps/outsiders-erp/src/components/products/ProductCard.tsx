@@ -9,6 +9,7 @@ interface ProductCardProps {
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
   onToggleVisibility: (id: string) => void;
+  readOnly?: boolean;
 }
 
 export function ProductCard({
@@ -16,6 +17,7 @@ export function ProductCard({
   onEdit,
   onDelete,
   onToggleVisibility,
+  readOnly = false,
 }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
@@ -113,6 +115,11 @@ export function ProductCard({
           {!product.is_visible && (
             <Badge variant="danger">Oculto</Badge>
           )}
+          {product.is_new_in && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-black text-white text-xs font-bold rounded shadow-sm tracking-wider">
+              NEW IN
+            </span>
+          )}
           {hasDiscount && (
             <span className="inline-flex items-center px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded shadow-sm">
               -{product.discount_percentage}%
@@ -164,6 +171,7 @@ export function ProductCard({
         )}
 
         {/* Acciones */}
+        {!readOnly && (
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(product)}
@@ -190,6 +198,7 @@ export function ProductCard({
             <Trash2 size={16} />
           </button>
         </div>
+        )}
       </div>
     </div>
   );

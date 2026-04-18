@@ -15,8 +15,21 @@ export default function BranchSelectionPage() {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null)
 
   useEffect(() => {
+    // Si es vendedor con sucursal fija, auto-seleccionar y redirigir
+    if (user && user.role === 'vendedor' && user.branch_id) {
+      branchService.getBranchById(user.branch_id)
+        .then((branch) => {
+          setActiveBranch(branch)
+          navigate('/dashboard', { replace: true })
+        })
+        .catch(() => {
+          toast.error('Error al cargar tu sucursal asignada')
+          setLoading(false)
+        })
+      return
+    }
     loadBranches()
-  }, [])
+  }, [user])
 
   const loadBranches = async () => {
     try {

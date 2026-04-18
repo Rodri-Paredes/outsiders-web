@@ -142,7 +142,12 @@ export const excelService = {
   /**
    * Exportar reporte de ventas con colores
    */
-  exportSalesReport(salesData: any[], dateRange: { startDate: string; endDate: string }) {
+  exportSalesReport(
+    salesData: any[],
+    dateRange: { startDate: string; endDate: string },
+    options: { includeFinancials?: boolean } = {}
+  ) {
+    const { includeFinancials = false } = options;
     // Preparar datos con una fila por cada producto vendido
     const rows: any[] = [];
     
@@ -151,8 +156,14 @@ export const excelService = {
         sale.sale_items.forEach((item: any) => {
           const itemDiscount = item.item_discount || 0;
           const finalPrice = item.subtotal - itemDiscount;
-          
-          rows.push({
+          const costPrice = item.product_variant?.product?.cost_price ?? null;
+          const unitProfit = costPrice != null ? item.unit_price - costPrice : null;
+          const totalProfit = unitProfit != null ? unitProfit * item.quantity : null;
+          const marginPct = item.unit_price > 0 && unitProfit != null
+            ? ((unitProfit / item.unit_price) * 100)
+            : null;
+
+          const row: any = {
             saleId: sale.id.substring(0, 8),
             date: new Date(sale.sale_date).toLocaleString('es-BO', {
               year: 'numeric',
@@ -172,8 +183,17 @@ export const excelService = {
             discount: sale.discount_amount || 0,
             paymentType: sale.payment_type,
             customerPhone: sale.customer_phone || 'N/A',
-            seller: sale.user?.name || 'N/A'
-          });
+            seller: sale.user?.name || 'N/A',
+          };
+
+          if (includeFinancials) {
+            row.costPrice = costPrice ?? 'N/D';
+            row.unitProfit = unitProfit != null ? unitProfit : 'N/D';
+            row.totalProfit = totalProfit != null ? totalProfit : 'N/D';
+            row.marginPct = marginPct != null ? `${marginPct.toFixed(1)}%` : 'N/D';
+          }
+
+          rows.push(row);
         });
       }
     });
@@ -277,6 +297,44 @@ export const excelService = {
         cellStyle: () => ({ bgColor: 'FEF3C7' })
       }
     ];
+
+    // Agregar columnas financieras solo para admins
+    if (includeFinancials) {
+      columns.push(
+        {
+          header: 'Precio Costo',
+          key: 'costPrice',
+          width: 14,
+          cellStyle: () => ({ bgColor: 'FEF3C7', fontColor: '92400E' })
+        },
+        {
+          header: 'Utilidad Unit.',
+          key: 'unitProfit',
+          width: 14,
+          cellStyle: (value) => ({
+            bgColor: typeof value === 'number' && value > 0 ? 'D1FAE5' : 'FEE2E2',
+            fontColor: typeof value === 'number' && value > 0 ? '065F46' : 'DC2626',
+            bold: true
+          })
+        },
+        {
+          header: 'Utilidad Total',
+          key: 'totalProfit',
+          width: 14,
+          cellStyle: (value) => ({
+            bgColor: typeof value === 'number' && value > 0 ? 'D1FAE5' : 'FEE2E2',
+            fontColor: typeof value === 'number' && value > 0 ? '065F46' : 'DC2626',
+            bold: true
+          })
+        },
+        {
+          header: 'Margen (%)',
+          key: 'marginPct',
+          width: 12,
+          cellStyle: () => ({ bgColor: 'EDE9FE', fontColor: '5B21B6', bold: true })
+        }
+      );
+    }
 
     // Exportar
     this.exportToExcel(rows, columns, {

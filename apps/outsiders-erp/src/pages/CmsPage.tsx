@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Image as ImageIcon, Star, Layout, Grid3X3, LayoutGrid } from 'lucide-react'
+import { Image as ImageIcon, Star, Layout, Grid3X3, LayoutGrid, Sparkles } from 'lucide-react'
 
 import HomeEditor from '@/components/cms/HomeEditor'
 import BannersEditor from '@/components/cms/BannersEditor'
 import FeaturedProductsEditor from '@/components/cms/FeaturedProductsEditor'
+import NewInEditor from '@/components/cms/NewInEditor'
 import SectionsEditor from '@/components/cms/SectionsEditor'
 import CategoriesEditor from '@/components/cms/CategoriesEditor'
 
-type TabId = 'banner' | 'best_sellers' | 'categories' | 'sections' | 'hero'
+type TabId = 'banner' | 'best_sellers' | 'new_in' | 'categories' | 'sections' | 'hero'
 
 interface Tab {
   id: TabId
@@ -28,6 +29,12 @@ const tabs: Tab[] = [
     label: 'Banner Promocional',
     icon: ImageIcon,
     description: 'Imagen y texto del bloque horizontal dentro del sitio',
+  },
+  {
+    id: 'new_in',
+    label: 'New In',
+    icon: Sparkles,
+    description: 'Novedades — productos recién llegados que aparecen primero en el home',
   },
   {
     id: 'best_sellers',
@@ -99,6 +106,7 @@ export default function CmsPage() {
         <div className="p-6">
           {activeTab === 'banner' && <BannersEditor />}
           {activeTab === 'categories' && <CategoriesEditor />}
+          {activeTab === 'new_in' && <NewInEditor />}
           {activeTab === 'best_sellers' && <FeaturedProductsEditor />}
           {activeTab === 'sections' && <SectionsEditor />}
           {activeTab === 'hero' && <HomeEditor />}

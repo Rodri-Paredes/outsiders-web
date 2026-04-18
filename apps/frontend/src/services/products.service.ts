@@ -65,15 +65,16 @@ export const productsService = {
     const { data, error } = await supabase
       .from('products')
       .select(`
-        *,
+        id, name, image_url, images, price, original_price, discount_percentage,
+        category, is_new_in, is_visible, created_at,
         variants:product_variants(
-          *,
-          stock(*)
+          id, size,
+          stock(quantity, branch_id)
         ),
         tags:product_tag_assignments(
           id,
           tag_id,
-          tag:product_tags(*)
+          tag:product_tags(id, name, tag_group)
         )
       `)
       .eq('is_visible', true)

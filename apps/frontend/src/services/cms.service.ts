@@ -5,6 +5,8 @@ export interface BestSellersConfig {
   product_ids: string[];
 }
 
+export type NewInConfig = BestSellersConfig;
+
 export interface HomeSection {
   id?: string;
   type: 'tag' | 'products';

@@ -92,10 +92,17 @@ export default function SectionsEditor() {
     setSections(prev => prev.map(s => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const removeSection = (id: string) => {
+  const removeSection = async (id: string) => {
     if (!confirm('¿Eliminar esta sección?')) return
-    setSections(prev => prev.filter(s => s.id !== id))
+    const updated = sections.filter(s => s.id !== id)
+    setSections(updated)
     if (activeSectionId === id) setActiveSectionId(null)
+    try {
+      await cmsService.setConfig('home_sections', updated)
+      toast.success('Sección eliminada ✓')
+    } catch (err: any) {
+      toast.error('Error al guardar: ' + err.message)
+    }
   }
 
   const moveSection = (index: number, dir: 'up' | 'down') => {

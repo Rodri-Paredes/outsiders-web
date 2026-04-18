@@ -11,6 +11,28 @@ import toast from 'react-hot-toast';
 import { Search, Filter, X, Check } from 'lucide-react';
 import { useBranch } from '@/contexts/BranchContext';
 
+function ProductCardImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  if (error || !src) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
+        {alt.charAt(0)}
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+      className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+      loading="lazy"
+      onError={() => setError(true)}
+    />
+  );
+}
+
 // Inner component handling the logic
 function ShopContent() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -18,22 +40,44 @@ function ShopContent() {
   const [loading, setLoading] = useState(true);
   
   // Initialize state directly from URL params
+  const initialCat = searchParams.get('category') || 'all';
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    // Map child categories to parent groups on initial load
+    const childToParent: Record<string, string> = { 'Hoodies': 'Sudaderas', 'Quarter Zip': 'Sudaderas', 'Jeans': 'Pantalones', 'Jogger': 'Pantalones' };
+    return childToParent[initialCat] || initialCat;
+  });
   const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('tag') ? [searchParams.get('tag') as string] : []);
   const [showOnlySale, setShowOnlySale] = useState(searchParams.get('sale') === 'true');
   
   const { selectedBranch } = useBranch();
   const [mounted, setMounted] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(() => {
+    const childCats = ['Hoodies', 'Quarter Zip', 'Jeans', 'Jogger'];
+    return childCats.includes(initialCat) ? initialCat : '';
+  });
 
-  const categories = ['all', 'Poleras', 'Soleras', 'Hoodies', 'Pantalones', 'Bermudas', 'Accesorios', 'Calzado', 'Gorras', 'Otros'];
+  // Categories shown in the filter bar (parent groups, not individual DB categories)
+  const categories = ['all', 'Poleras', 'Soleras', 'Sudaderas', 'Pantalones', 'Bermudas', 'Accesorios', 'Otros'];
+
+  // Group categories that expand into sub-categories
+  const CATEGORY_GROUPS: Record<string, string[]> = {
+    'Sudaderas': ['Hoodies', 'Quarter Zip'],
+    'Pantalones': ['Jeans', 'Jogger'],
+  };
 
   useEffect(() => {
     setMounted(true);
     // Hydrate cart store from localStorage
     useCartStore.persist.rehydrate();
   }, []);
+
+  // Reverse lookup: DB category → parent group name
+  const CHILD_TO_PARENT: Record<string, string> = {};
+  Object.entries(CATEGORY_GROUPS).forEach(([parent, children]) => {
+    children.forEach((child) => { CHILD_TO_PARENT[child] = parent; });
+  });
 
   // Effect to handle URL param changes (e.g. from Link clicks while routing)
   useEffect(() => {
@@ -43,7 +87,16 @@ function ShopContent() {
     const saleParam = searchParams.get('sale');
 
     if (q !== null) setSearchTerm(q);
-    if (cat !== null) setSelectedCategory(cat);
+    if (cat !== null) {
+      // If URL has a child category (e.g. Hoodies), select the parent group + sub-category
+      if (CHILD_TO_PARENT[cat]) {
+        setSelectedCategory(CHILD_TO_PARENT[cat]);
+        setSelectedSubCategory(cat);
+      } else {
+        setSelectedCategory(cat);
+        setSelectedSubCategory('');
+      }
+    }
     
     setShowOnlySale(saleParam === 'true');
     
@@ -53,12 +106,12 @@ function ShopContent() {
     }
   }, [searchParams]);
 
-  // Reset tags when category changes manually, but NOT when URL is dictating the tag
+  // Reset tags and sub-category when category changes manually
   const prevCategoryRef = useRef<string>(selectedCategory);
   useEffect(() => {
-    // Solo borramos tags si cambia la categoría y la URL actual no nos está forzando un tag  
     if (prevCategoryRef.current !== selectedCategory && !searchParams.get('tag')) {
-      setSelectedTags([]); 
+      setSelectedTags([]);
+      setSelectedSubCategory('');
     }
     prevCategoryRef.current = selectedCategory;
   }, [selectedCategory, searchParams]);
@@ -88,42 +141,91 @@ function ShopContent() {
   // Derive dynamic filters from products available in the selected category
   const availableTagsMap = useMemo(() => {
     const map = new Map<string, { name: string; group: string }>();
+    // Determine which DB categories to match for tag extraction
+    const dbCategories = CATEGORY_GROUPS[selectedCategory] || (selectedCategory !== 'all' ? [selectedCategory] : []);
+    const targetCategory = selectedSubCategory || null;
+
     products.forEach((p) => {
-      // Solo mostramos tags relativos a la categoría que apretaste
-      // Si la categoría es 'all', no extraemos atributos para no saturar 
-      // y mantener el sub-filtro solo cuando entras a algo específico.
-      if (selectedCategory !== 'all' && p.category === selectedCategory) {
-        if (p.tags) {
-          p.tags.forEach((assignment) => {
-            const t = assignment.tag;
-            if (t) {
-              map.set(t.name, { name: t.name, group: t.tag_group || 'Atributos' });
-            }
-          });
-        }
+      if (selectedCategory === 'all') return;
+      // If there's a sub-category selected, only show tags for that sub-cat
+      const matches = targetCategory
+        ? p.category === targetCategory
+        : dbCategories.length > 0
+          ? dbCategories.includes(p.category || '')
+          : p.category === selectedCategory;
+      if (matches && p.tags) {
+        p.tags.forEach((assignment) => {
+          const t = assignment.tag;
+          if (t) {
+            map.set(t.name, { name: t.name, group: t.tag_group || 'Atributos' });
+          }
+        });
       }
     });
     return Array.from(map.values());
-  }, [products, selectedCategory]);
+  }, [products, selectedCategory, selectedSubCategory]);
+
+  // Standard tag filters that should always show for certain categories
+  const STATIC_FILTERS: Record<string, Record<string, string[]>> = {
+    'Poleras': { 'gramaje': ['20/1', 'Alto gramaje'], 'tipo': ['Básica', 'Estampada'] },
+    'Soleras': { 'tipo': ['Básica', 'Estampada'] },
+    'Hoodies': { 'gramaje': ['20/1', 'Alto gramaje'], 'tipo': ['Básica', 'Estampada'] },
+    'Quarter Zip': { 'gramaje': ['20/1', 'Alto gramaje'], 'tipo': ['Básica', 'Estampada'] },
+  };
 
   const groupedTags = useMemo(() => {
+    // Start with dynamic tags from products
     const groups: Record<string, string[]> = {};
     availableTagsMap.forEach((t) => {
       if (!groups[t.group]) groups[t.group] = [];
-      groups[t.group].push(t.name);
+      if (!groups[t.group].includes(t.name)) groups[t.group].push(t.name);
     });
-    
-    // Sort array inside groups for consistency
+
+    // Merge static filters for the active category/sub-category
+    const activeCats = selectedSubCategory
+      ? [selectedSubCategory]
+      : CATEGORY_GROUPS[selectedCategory]
+        ? CATEGORY_GROUPS[selectedCategory]
+        : selectedCategory !== 'all' ? [selectedCategory] : [];
+
+    activeCats.forEach((cat) => {
+      const statics = STATIC_FILTERS[cat];
+      if (statics) {
+        Object.entries(statics).forEach(([group, tags]) => {
+          if (!groups[group]) groups[group] = [];
+          tags.forEach((tag) => {
+            if (!groups[group].includes(tag)) groups[group].push(tag);
+          });
+        });
+      }
+    });
+
+    // Sort arrays
     Object.keys(groups).forEach(key => {
       groups[key].sort();
     });
     
     return groups;
-  }, [availableTagsMap]);
+  }, [availableTagsMap, selectedCategory, selectedSubCategory]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+
+    // Category matching: handle groups (Sudaderas→Hoodies/Quarter Zip, Pantalones→Jeans/Jogger)
+    let matchesCategory = false;
+    if (selectedCategory === 'all') {
+      matchesCategory = true;
+    } else if (CATEGORY_GROUPS[selectedCategory]) {
+      // It's a parent group — if sub-category is selected, match only that
+      if (selectedSubCategory) {
+        matchesCategory = product.category === selectedSubCategory;
+      } else {
+        matchesCategory = CATEGORY_GROUPS[selectedCategory].includes(product.category || '');
+      }
+    } else {
+      matchesCategory = product.category === selectedCategory;
+    }
+
     const matchesSale = !showOnlySale || (product.original_price && product.discount_percentage && product.discount_percentage > 0);
     
     const matchesTags =
@@ -240,7 +342,7 @@ function ShopContent() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-200 pb-5 w-full relative z-10">
             {/* Primary Categories */}
             <div className="flex-1 min-w-0 w-full">
-              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full relative">
+              <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full relative items-end">
                 {categories.map((category) => (
                   <button
                     key={category}
@@ -287,6 +389,35 @@ function ShopContent() {
               </button>
             </div>
           </div>
+
+          {/* Sub-categories for group categories (Sudaderas → Hoodies/Quarter Zip, Pantalones → Jeans/Jogger) */}
+          {CATEGORY_GROUPS[selectedCategory] && (
+            <div className="flex items-center gap-3 pt-2 pb-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <button
+                onClick={() => { setSelectedSubCategory(''); setSelectedTags([]); }}
+                className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${
+                  !selectedSubCategory
+                    ? 'border-black text-black'
+                    : 'border-transparent text-gray-400 hover:text-black'
+                }`}
+              >
+                Todos
+              </button>
+              {CATEGORY_GROUPS[selectedCategory].map((sub) => (
+                <button
+                  key={sub}
+                  onClick={() => { setSelectedSubCategory(sub === selectedSubCategory ? '' : sub); setSelectedTags([]); }}
+                  className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 ${
+                    selectedSubCategory === sub
+                      ? 'border-black text-black'
+                      : 'border-transparent text-gray-400 hover:text-black'
+                  }`}
+                >
+                  {sub}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Sub-Filters: Desktop Only Inline display */}
           {/* We only show subfilters if a specific category is chosen and it has unique tags */}
@@ -371,26 +502,20 @@ function ShopContent() {
                     >
                       {/* Image */}
                       <div className="aspect-[3/4] md:aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100 flex items-center justify-center">
-                        {product.image_url || (product as any).images?.[0] ? (
-                          <Image
-                            src={(product as any).images?.[0] || product.image_url || ''}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
-                            loading="lazy"
-                            quality={75}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
-                            {product.name.charAt(0)}
-                          </div>
-                        )}
+                        <ProductCardImage
+                          src={(product as any).images?.[0] || product.image_url || ''}
+                          alt={product.name}
+                        />
 
                         {/* Badges Container */}
+                        <div className="absolute top-0 left-0 z-10 flex flex-col items-start gap-0.5">
+                          {(product as any).is_new_in && (
+                            <span className="inline-block px-2 py-1 bg-black text-white text-[9px] font-bold uppercase tracking-widest">
+                              NEW IN
+                            </span>
+                          )}
+                        </div>
                         <div className="absolute top-0 right-0 z-10 flex flex-col items-end">
-                          {/* No discount badge as requested */}
-
                           {/* Stock Badge */}
                           {!hasStock && (
                             <span className="inline-block px-2 py-1.5 md:px-3 md:py-1.5 bg-black text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-center shadow-sm">

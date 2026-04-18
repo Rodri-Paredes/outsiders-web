@@ -8,27 +8,34 @@ import {
   BarChart3,
   X,
   Globe,
-  Tag
+  Tag,
+  Users,
+  Ruler
 } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const navigation = [
-  { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard },
-  { name: 'Ventas', to: '/sales', icon: ShoppingCart },
-  { name: 'Productos', to: '/products', icon: Package },
-  // { name: 'Drops', to: '/drops', icon: Sparkles },
-  { name: 'Stock', to: '/stock', icon: Database },
-  { name: 'Caja', to: '/cash', icon: Wallet },
-  { name: 'Descuentos', to: '/discounts', icon: Tag },
-  { name: 'CMS Web', to: '/cms', icon: Globe },
-  { name: 'Reportes', to: '/reports', icon: BarChart3 },
+const allNavigation = [
+  { name: 'Dashboard', to: '/dashboard', icon: LayoutDashboard, adminOnly: false },
+  { name: 'Ventas', to: '/sales', icon: ShoppingCart, adminOnly: false },
+  { name: 'Productos', to: '/products', icon: Package, adminOnly: false },
+  { name: 'Stock', to: '/stock', icon: Database, adminOnly: false },
+  { name: 'Caja', to: '/cash', icon: Wallet, adminOnly: false },
+  { name: 'Descuentos', to: '/discounts', icon: Tag, adminOnly: true },
+  { name: 'CMS Web', to: '/cms', icon: Globe, adminOnly: true },
+  { name: 'Guías de Talla', to: '/size-guides', icon: Ruler, adminOnly: true },
+  { name: 'Usuarios', to: '/users', icon: Users, adminOnly: true },
+  { name: 'Reportes', to: '/reports', icon: BarChart3, adminOnly: true },
 ]
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { isAdmin } = useAuth()
+  const navigation = allNavigation.filter(item => !item.adminOnly || isAdmin)
+
   return (
     <>
       {/* Mobile Backdrop */}

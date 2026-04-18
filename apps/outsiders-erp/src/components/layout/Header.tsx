@@ -77,6 +77,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <div className="px-4 py-3 border-b border-gray-200">
                   <p className="text-sm font-medium text-gray-900">{user?.name}</p>
                   <p className="text-xs text-gray-600">{user?.email}</p>
+                  <span className={`inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${isAdmin ? 'bg-gray-900 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                    {isAdmin ? 'Administrador' : 'Vendedor'}
+                  </span>
                 </div>
 
                 {isAdmin && (

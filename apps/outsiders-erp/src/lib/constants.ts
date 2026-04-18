@@ -6,11 +6,11 @@ export const CATEGORIES = [
   'Poleras',
   'Soleras',
   'Hoodies',
-  'Pantalones',
+  'Quarter Zip',
+  'Jeans',
+  'Jogger',
   'Bermudas',
   'Accesorios',
-  'Calzado',
-  'Gorras',
   'Otros',
 ] as const
 
@@ -34,11 +34,11 @@ export const SIZES_BY_CATEGORY: Record<string, readonly string[]> = {
   Poleras: ['XS', 'S', 'M', 'L', 'XL'],
   Soleras: ['XS', 'S', 'M', 'L', 'XL'],
   Hoodies: ['XS', 'S', 'M', 'L', 'XL'],
-  Pantalones: ['38', '40', '42', '44', '46'],
+  'Quarter Zip': ['XS', 'S', 'M', 'L', 'XL'],
+  Jeans: ['38', '40', '42', '44', '46'],
+  Jogger: ['XS', 'S', 'M', 'L', 'XL'],
   Bermudas: ['38', '40', '42', '44', '46'],
   Accesorios: ['TALLA UNICA'],
-  Calzado: ['38', '39', '40', '41', '42', '43', '44'],
-  Gorras: ['TALLA UNICA'],
   Otros: ['XS', 'S', 'M', 'L', 'XL', 'TALLA UNICA'],
 } as const
 

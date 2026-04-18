@@ -231,9 +231,6 @@ export default function ProductList() {
                   <p className="text-xl text-black font-bold">
                     Bs. {getFinalPrice(selectedProduct).toFixed(2)}
                   </p>
-                  <span className="inline-flex items-center px-2 py-0.5 bg-black text-white text-xs font-bold rounded">
-                    -{selectedProduct.discount_percentage}%
-                  </span>
                 </div>
               ) : (
                 <p className="text-xl text-black font-bold">
