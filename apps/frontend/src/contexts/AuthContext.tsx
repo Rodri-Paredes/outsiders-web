@@ -53,8 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name?: string) => {
     await authService.signUp(email, password, name);
-    const profile = await authService.getCurrentUser();
-    setUser(profile);
+    // No fetch profile here — user needs to confirm email first
   };
 
   const signOut = async () => {

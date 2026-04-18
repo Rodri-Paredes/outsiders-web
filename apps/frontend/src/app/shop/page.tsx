@@ -528,6 +528,7 @@ function ShopContent() {
                         {hasStock && (
                           <div className="hidden md:block absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300" />
                         )}
+
                       </div>
 
                       {/* Info Container */}

@@ -7,6 +7,7 @@ import { WhatsAppButton } from '@/components/WhatsAppButton';
 import { ToastProvider } from '@/components/ToastProvider';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { BranchProvider } from '@/contexts/BranchContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { BranchModal } from '@/components/BranchModal';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -31,6 +32,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={montserrat.className}>
+        <AuthProvider>
         <BranchProvider>
           <BranchModal />
           <Navbar />
@@ -42,6 +44,7 @@ export default function RootLayout({
           <WhatsAppButton />
           <ToastProvider />
         </BranchProvider>
+        </AuthProvider>
       </body>
     </html>
   );

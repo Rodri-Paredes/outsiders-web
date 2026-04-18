@@ -6,13 +6,15 @@ import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { useCartStore } from '@/store/cartStore';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useBranch } from '@/contexts/BranchContext';
 import { RecommendedForYou } from '@/components/home/RecommendedForYou';
 import { useAnonId } from '@/hooks/useAnonId';
 import { recommendationsService } from '@/services/recommendations.service';
 import { sizeGuideService, SizeGuide } from '@/services/sizeGuide.service';
+import { useAuth } from '@/contexts/AuthContext';
+import { favoritesService } from '@/services/favorites.service';
 
 // Sizes are now loaded dynamically from product variants
 
@@ -32,11 +34,21 @@ export default function ProductPage() {
   const items = useCartStore((state) => state.items);
   const { selectedBranch } = useBranch();
   const anonId = useAnonId();
+  const { user } = useAuth();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favLoading, setFavLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     useCartStore.persist.rehydrate();
   }, []);
+
+  // Check favorite status
+  useEffect(() => {
+    if (user && params.id) {
+      favoritesService.isFavorite(user.id, params.id as string).then(setIsFavorite);
+    }
+  }, [user, params.id]);
 
   // Registrar vista del producto cuando el producto y el anon_id estén disponibles
   useEffect(() => {
@@ -172,6 +184,30 @@ export default function ProductPage() {
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('Error al agregar al carrito');
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+    if (!product || favLoading) return;
+    setFavLoading(true);
+    try {
+      if (isFavorite) {
+        await favoritesService.removeFavorite(user.id, product.id);
+        setIsFavorite(false);
+        toast.success('Eliminado de favoritos');
+      } else {
+        await favoritesService.addFavorite(user.id, product.id);
+        setIsFavorite(true);
+        toast.success('Agregado a favoritos');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setFavLoading(false);
     }
   };
 
@@ -435,6 +471,21 @@ export default function ProductPage() {
                 const quantityInCart = existingItem ? existingItem.quantity : 0;
                 return quantityInCart >= selectedSizeStock ? 'En el Carrito' : 'Añadir al Carrito';
               })()}
+            </button>
+
+            {/* Favorite button */}
+            <button
+              type="button"
+              onClick={handleToggleFavorite}
+              disabled={favLoading}
+              className={`w-full py-3.5 border text-sm font-medium uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                isFavorite
+                  ? 'border-red-200 bg-red-50 text-red-500'
+                  : 'border-gray-200 text-gray-600 hover:border-black hover:text-black'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500' : ''}`} />
+              {isFavorite ? 'En Favoritos' : 'Agregar a Favoritos'}
             </button>
           </div>
         </div>

@@ -50,6 +50,12 @@ export const useAuthStore = create<AuthState>()(
 
           if (profileError) throw profileError
 
+          // Solo admin y vendedor pueden acceder al ERP
+          if (profile.role === 'user') {
+            await supabase.auth.signOut()
+            throw new Error('No tienes permisos para acceder al sistema ERP')
+          }
+
           set({
             user: profile,
             isAuthenticated: true,
@@ -109,6 +115,13 @@ export const useAuthStore = create<AuthState>()(
             .single()
 
           if (error) throw error
+
+          // Solo admin y vendedor pueden acceder al ERP
+          if (profile.role === 'user') {
+            await supabase.auth.signOut()
+            set({ user: null, isAuthenticated: false, isLoading: false })
+            return
+          }
 
           set({
             user: profile,

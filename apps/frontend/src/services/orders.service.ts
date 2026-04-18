@@ -76,5 +76,16 @@ export const ordersService = {
 
     if (error) throw error
     return data
+  },
+
+  async getWhatsappOrdersByUser(userId: string) {
+    const { data, error } = await supabase
+      .from('whatsapp_orders')
+      .select('*')
+      .eq('customer_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
   }
 }

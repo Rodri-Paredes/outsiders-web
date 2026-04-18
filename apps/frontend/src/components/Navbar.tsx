@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Search, MessageCircle, Menu, X, ChevronDown, MapPin } from 'lucide-react';
+import { ShoppingBag, Search, MessageCircle, Menu, X, ChevronDown, MapPin, UserCircle } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { SearchOverlay } from './layout/SearchOverlay';
 import { useBranch } from '@/contexts/BranchContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const WHATSAPP_CBB = '59164884458';
 const WHATSAPP_SCZ = '59176978023';
@@ -26,6 +27,7 @@ export default function Navbar() {
   const [bannerIndex, setBannerIndex] = useState(0);
   const [bannerOpacity, setBannerOpacity] = useState(1);
   const { selectedBranch, setShowModal } = useBranch();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Rotación del banner principal
@@ -251,6 +253,15 @@ export default function Navbar() {
                 </button>
               )}
 
+              <Link
+                href={user ? '/perfil' : '/auth'}
+                className="flex items-center justify-center text-black hover:scale-110 transition-transform"
+                aria-label={user ? 'Mi perfil' : 'Iniciar sesión'}
+                title={user ? 'Mi perfil' : 'Iniciar sesión'}
+              >
+                <UserCircle className="w-5 h-5" />
+              </Link>
+
               <button
                 type="button"
                 onClick={handleWhatsApp}
@@ -327,6 +338,15 @@ export default function Navbar() {
                 >
                   WhatsApp
                 </button>
+                <div className="border-t border-gray-200 pt-3 mt-1">
+                  <Link
+                    href={user ? '/perfil' : '/auth'}
+                    className="text-[11px] tracking-[0.2em] font-medium uppercase text-black hover:text-gray-600 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {user ? 'MI PERFIL' : 'INICIAR SESIÓN'}
+                  </Link>
+                </div>
               </nav>
             </div>
           )}

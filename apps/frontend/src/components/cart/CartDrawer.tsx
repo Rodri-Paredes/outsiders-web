@@ -282,7 +282,7 @@ export function CartDrawer() {
                           </div>
 
                           <span className="text-xs md:text-sm font-semibold text-black ml-auto">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            Bs. {(item.price * item.quantity).toFixed(2)}
                           </span>
 
                           <button
@@ -305,7 +305,7 @@ export function CartDrawer() {
                     Subtotal:
                   </span>
                   <span className="text-2xl font-bold text-black">
-                    ${subtotal.toFixed(2)}
+                    Bs. {subtotal.toFixed(2)}
                   </span>
                 </div>
               </div>
