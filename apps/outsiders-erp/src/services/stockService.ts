@@ -70,10 +70,10 @@ export const stockService = {
         .select('*')
         .eq('variant_id', variantId)
         .eq('branch_id', branchId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      return data as Stock;
+      return data as Stock | null;
     } catch (error) {
       console.error('Error fetching stock by variant:', error);
       throw error;
@@ -111,7 +111,14 @@ export const stockService = {
 
       // Primero obtenemos el stock actual
       const currentStock = await this.getStockByVariant(variantId, branchId);
-      const difference = newQuantity - (currentStock?.quantity || 0);
+
+      if (currentStock === null) {
+        // No existe registro de stock — inicializarlo directamente
+        await this.initializeStock(variantId, branchId, newQuantity);
+        return { success: true };
+      }
+
+      const difference = newQuantity - currentStock.quantity;
 
       // Actualizamos con la diferencia
       const { error } = await supabase.rpc('update_stock', {

@@ -12,6 +12,7 @@ export interface Product {
   drop_id?: string
   is_visible: boolean
   is_new_in?: boolean
+  sort_order?: number
   created_at?: string
   updated_at?: string
   variants?: ProductVariant[]

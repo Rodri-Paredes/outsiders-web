@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Image as ImageIcon, Star, Layout, Grid3X3, LayoutGrid, Sparkles } from 'lucide-react'
+import { Image as ImageIcon, Star, Layout, Grid3X3, LayoutGrid, Sparkles, ListOrdered } from 'lucide-react'
 
 import HomeEditor from '@/components/cms/HomeEditor'
 import BannersEditor from '@/components/cms/BannersEditor'
@@ -7,8 +7,9 @@ import FeaturedProductsEditor from '@/components/cms/FeaturedProductsEditor'
 import NewInEditor from '@/components/cms/NewInEditor'
 import SectionsEditor from '@/components/cms/SectionsEditor'
 import CategoriesEditor from '@/components/cms/CategoriesEditor'
+import ProductOrderEditor from '@/components/cms/ProductOrderEditor'
 
-type TabId = 'banner' | 'best_sellers' | 'new_in' | 'categories' | 'sections' | 'hero'
+type TabId = 'banner' | 'best_sellers' | 'new_in' | 'categories' | 'sections' | 'hero' | 'product_order'
 
 interface Tab {
   id: TabId
@@ -53,6 +54,12 @@ const tabs: Tab[] = [
     label: 'Secciones',
     icon: Grid3X3,
     description: 'Secciones dinámicas del home',
+  },
+  {
+    id: 'product_order',
+    label: 'Orden de Productos',
+    icon: ListOrdered,
+    description: 'Define el orden en que aparecen los productos dentro de cada categoría en la tienda',
   },
 ]
 
@@ -110,6 +117,7 @@ export default function CmsPage() {
           {activeTab === 'best_sellers' && <FeaturedProductsEditor />}
           {activeTab === 'sections' && <SectionsEditor />}
           {activeTab === 'hero' && <HomeEditor />}
+          {activeTab === 'product_order' && <ProductOrderEditor />}
         </div>
       </div>
     </div>

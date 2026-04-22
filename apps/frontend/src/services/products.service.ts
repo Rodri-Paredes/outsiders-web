@@ -66,7 +66,7 @@ export const productsService = {
       .from('products')
       .select(`
         id, name, image_url, images, price, original_price, discount_percentage,
-        category, is_new_in, is_visible, created_at,
+        category, is_new_in, is_visible, sort_order, created_at,
         variants:product_variants(
           id, size,
           stock(quantity, branch_id)
@@ -78,6 +78,7 @@ export const productsService = {
         )
       `)
       .eq('is_visible', true)
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -103,6 +104,7 @@ export const productsService = {
           tag:product_tags(*)
         )
       `)
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (error) {
