@@ -59,174 +59,196 @@ function AuthPageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 pt-28 pb-12">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-4">
-            <span className="text-4xl font-light text-white tracking-[0.25em]">OUTSIDERS</span>
+    <div className="fixed inset-0 z-[200] bg-black flex">
+      {/* LEFT — brand image panel (hidden on mobile) */}
+      <div className="hidden md:flex md:w-1/2 lg:w-[55%] relative overflow-hidden">
+        <img
+          src="/logos/_DSC5826-2.jpg.jpeg"
+          alt="Outsiders"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+
+      </div>
+
+      {/* RIGHT — form panel */}
+      <div className="w-full md:w-1/2 lg:w-[45%] flex flex-col overflow-y-auto bg-[#0A0A0A]">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-8 pt-8 pb-0 shrink-0">
+          <Link href="/">
+            <img
+              src="/logos/logo inferior web.png"
+              alt="OUTSIDERS"
+              className="h-10 w-auto brightness-0 invert"
+            />
           </Link>
-          <h2 className="text-2xl font-light text-white tracking-tight">
-            {mode === 'forgot' ? 'Recuperar Contraseña' : mode === 'signup' ? 'Crear Cuenta' : 'Iniciar Sesión'}
-          </h2>
-          {mode === 'forgot' && !resetSent && (
-            <p className="text-sm text-gray-400 mt-2">Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
-          )}
+          <Link
+            href="/"
+            className="text-[10px] text-white/40 hover:text-white transition-colors tracking-[0.2em] uppercase"
+          >
+            ← Tienda
+          </Link>
         </div>
 
-        {mode === 'forgot' && resetSent ? (
-          <div className="text-center space-y-6">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-              </div>
-              <p className="text-white text-sm font-medium mb-2">¡Correo enviado!</p>
-              <p className="text-gray-400 text-xs">
-                Revisa tu bandeja de entrada en <span className="text-white">{email}</span> y sigue el enlace para restablecer tu contraseña.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => switchMode('signin')}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              ← Volver a iniciar sesión
-            </button>
-          </div>
-        ) : signupSent ? (
-          <div className="text-center space-y-6">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-green-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                </svg>
-              </div>
-              <p className="text-white text-sm font-medium mb-2">¡Revisa tu correo!</p>
-              <p className="text-gray-400 text-xs">
-                Enviamos un enlace de verificación a <span className="text-white">{email}</span>. Confirma tu cuenta para poder iniciar sesión.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => switchMode('signin')}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              ← Volver a iniciar sesión
-            </button>
-          </div>
-        ) : (
-          <>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {mode === 'signup' && (
-                <div>
-                  <label htmlFor="name" className="block text-sm font-light text-gray-light mb-2 tracking-wide">
-                    Nombre
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 bg-dark-card border border-white/10 text-white focus:outline-none focus:border-white transition-colors"
-                    placeholder="Tu nombre"
-                  />
-                </div>
-              )}
+        {/* Form wrapper — vertically centered */}
+        <div className="flex-1 flex items-center justify-center px-8 py-12">
+          <div className="w-full max-w-sm">
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-light text-gray-light mb-2 tracking-wide">
-                  Correo electrónico
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-dark-card border border-white/10 text-white focus:outline-none focus:border-white transition-colors"
-                  placeholder="tu@email.com"
-                />
-              </div>
-
-              {mode !== 'forgot' && (
-                <div>
-                  <label htmlFor="password" className="block text-sm font-light text-gray-light mb-2 tracking-wide">
-                    Contraseña
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-dark-card border border-white/10 text-white focus:outline-none focus:border-white transition-colors"
-                    placeholder="••••••••"
-                    minLength={6}
-                  />
-                </div>
-              )}
-
-              {error && (
-                <div className="bg-red-900/20 border border-red-500/50 text-red-400 px-4 py-3 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-white text-black py-4 px-4 font-light text-xs tracking-widest uppercase hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading
-                  ? 'Cargando...'
-                  : mode === 'forgot'
-                  ? 'Enviar enlace de recuperación'
+            {/* Title */}
+            <div className="mb-10">
+              <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+                {mode === 'forgot'
+                  ? 'Recuperar\ncontraseña'
                   : mode === 'signup'
-                  ? 'Crear Cuenta'
-                  : 'Iniciar Sesión'}
-              </button>
-            </form>
+                  ? 'Crear\ncuenta'
+                  : 'Bienvenido\nde vuelta'}
+              </h1>
+              {mode === 'forgot' && !resetSent && (
+                <p className="text-sm text-white/40 mt-3 leading-relaxed">
+                  Te enviaremos un enlace para restablecer tu contraseña.
+                </p>
+              )}
+            </div>
 
-            {/* Forgot password link (only on signin) */}
-            {mode === 'signin' && (
-              <div className="mt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => switchMode('forgot')}
-                  className="text-xs text-gray-500 hover:text-white transition-colors"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-            )}
-
-            <div className="mt-6 text-center">
-              {mode === 'forgot' ? (
-                <button
-                  type="button"
-                  onClick={() => switchMode('signin')}
-                  className="text-sm text-gray-light hover:text-white transition-colors"
-                >
+            {/* Success states */}
+            {mode === 'forgot' && resetSent ? (
+              <div className="space-y-6">
+                <div className="border border-white/10 p-6">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-4">
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  </div>
+                  <p className="text-white text-sm font-medium mb-1">¡Correo enviado!</p>
+                  <p className="text-white/40 text-xs leading-relaxed">
+                    Revisa tu bandeja en <span className="text-white">{email}</span> y sigue el enlace para restablecer tu contraseña.
+                  </p>
+                </div>
+                <button type="button" onClick={() => switchMode('signin')} className="text-xs text-white/40 hover:text-white transition-colors tracking-wide">
                   ← Volver a iniciar sesión
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => switchMode(mode === 'signup' ? 'signin' : 'signup')}
-                  className="text-sm text-gray-light hover:text-white transition-colors"
-                >
-                  {mode === 'signup' ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+              </div>
+            ) : signupSent ? (
+              <div className="space-y-6">
+                <div className="border border-white/10 p-6">
+                  <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-4">
+                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                    </svg>
+                  </div>
+                  <p className="text-white text-sm font-medium mb-1">¡Revisa tu correo!</p>
+                  <p className="text-white/40 text-xs leading-relaxed">
+                    Enviamos un enlace de verificación a <span className="text-white">{email}</span>. Confirma tu cuenta para iniciar sesión.
+                  </p>
+                </div>
+                <button type="button" onClick={() => switchMode('signin')} className="text-xs text-white/40 hover:text-white transition-colors tracking-wide">
+                  ← Volver a iniciar sesión
                 </button>
-              )}
-            </div>
-          </>
-        )}
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {mode === 'signup' && (
+                    <div className="space-y-1.5">
+                      <label htmlFor="name" className="block text-[10px] text-white/40 tracking-[0.2em] uppercase">
+                        Nombre
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
+                        placeholder="Tu nombre completo"
+                      />
+                    </div>
+                  )}
 
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-gray-medium hover:text-gray-light transition-colors">
-            ← Volver a la tienda
-          </Link>
+                  <div className="space-y-1.5">
+                    <label htmlFor="email" className="block text-[10px] text-white/40 tracking-[0.2em] uppercase">
+                      Correo electrónico
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+
+                  {mode !== 'forgot' && (
+                    <div className="space-y-1.5">
+                      <label htmlFor="password" className="block text-[10px] text-white/40 tracking-[0.2em] uppercase">
+                        Contraseña
+                      </label>
+                      <input
+                        id="password"
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
+                        placeholder="••••••••"
+                        minLength={6}
+                      />
+                    </div>
+                  )}
+
+                  {error && (
+                    <p className="text-red-400 text-xs py-2 border-l-2 border-red-500 pl-3">
+                      {error}
+                    </p>
+                  )}
+
+                  <div className="pt-4">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-white text-black py-4 text-[11px] tracking-[0.25em] uppercase font-medium hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {loading
+                        ? 'Cargando...'
+                        : mode === 'forgot'
+                        ? 'Enviar enlace'
+                        : mode === 'signup'
+                        ? 'Crear cuenta'
+                        : 'Ingresar'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Secondary actions */}
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  {mode === 'signin' && (
+                    <button
+                      type="button"
+                      onClick={() => switchMode('forgot')}
+                      className="text-[11px] text-white/30 hover:text-white/70 transition-colors"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  )}
+                  <div className="w-full border-t border-white/8 pt-5 text-center">
+                    <button
+                      type="button"
+                      onClick={() => switchMode(mode === 'signup' ? 'signin' : mode === 'forgot' ? 'signin' : 'signup')}
+                      className="text-[11px] text-white/40 hover:text-white transition-colors tracking-wide"
+                    >
+                      {mode === 'signup'
+                        ? '¿Ya tienes cuenta? Inicia sesión'
+                        : mode === 'forgot'
+                        ? '← Volver a iniciar sesión'
+                        : '¿No tienes cuenta? Regístrate'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

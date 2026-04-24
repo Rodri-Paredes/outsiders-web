@@ -198,6 +198,7 @@ export const productService = {
       if (product.drop_id) insertData.drop_id = product.drop_id;
       if ((product as any).sku) insertData.sku = (product as any).sku;
       if ((product as any).is_new_in !== undefined) insertData.is_new_in = (product as any).is_new_in;
+      if ((product as any).size_guide_id != null) insertData.size_guide_id = (product as any).size_guide_id;
 
       // Only include discount fields if they have values
       if (product.original_price != null && product.original_price > 0) {
@@ -257,10 +258,39 @@ export const productService = {
   },
 
   /**
-   * Eliminar un producto
+   * Eliminar un producto con todos sus datos relacionados
    */
   async deleteProduct(id: string) {
     try {
+      // 1. Obtener todas las variantes del producto
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('id')
+        .eq('product_id', id);
+
+      if (variants && variants.length > 0) {
+        const variantIds = variants.map((v) => v.id);
+
+        // 2. Eliminar todos los registros de stock de esas variantes
+        await supabase
+          .from('stock')
+          .delete()
+          .in('variant_id', variantIds);
+
+        // 3. Eliminar las variantes
+        await supabase
+          .from('product_variants')
+          .delete()
+          .in('id', variantIds);
+      }
+
+      // 4. Eliminar asignaciones de tags
+      await supabase
+        .from('product_tag_assignments')
+        .delete()
+        .eq('product_id', id);
+
+      // 5. Eliminar el producto
       const { error } = await supabase
         .from('products')
         .delete()

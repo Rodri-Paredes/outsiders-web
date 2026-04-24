@@ -13,7 +13,7 @@ export function Footer() {
   return (
     <footer className="bg-dark-card border-t border-white/10 mt-32">
       <div className="container-custom py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           {/* Brand */}
           <div className="col-span-1">
             <Image
@@ -71,6 +71,38 @@ export function Footer() {
               <li>
                 <Link href="/cart" className="text-sm text-white hover:text-white/70 transition-colors font-light">
                   Carrito de Compras
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Info */}
+          <div>
+            <h4 className="text-xs font-bold text-white mb-6 uppercase tracking-[0.25em]">Información</h4>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/nosotros" className="text-sm text-white hover:text-white/70 transition-colors font-light">
+                  Sobre Nosotros
+                </Link>
+              </li>
+              <li>
+                <Link href="/envios" className="text-sm text-white hover:text-white/70 transition-colors font-light">
+                  Política de Envíos
+                </Link>
+              </li>
+              <li>
+                <Link href="/cambios-devoluciones" className="text-sm text-white hover:text-white/70 transition-colors font-light">
+                  Cambios y Devoluciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/terminos-condiciones" className="text-sm text-white hover:text-white/70 transition-colors font-light">
+                  Términos y Condiciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacidad" className="text-sm text-white hover:text-white/70 transition-colors font-light">
+                  Política de Privacidad
                 </Link>
               </li>
             </ul>

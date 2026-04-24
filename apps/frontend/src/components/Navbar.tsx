@@ -222,9 +222,9 @@ export default function Navbar() {
               <img
                 src="/logos/navbar-logo-negro.png"
                 alt="OUTSIDERS"
-                width="120"
-                height="40"
-                className="h-8 md:h-10 w-auto pointer-events-none"
+                width="160"
+                height="50"
+                className="h-10 md:h-14 w-auto pointer-events-none"
                 loading="eager"
                 decoding="sync"
               />

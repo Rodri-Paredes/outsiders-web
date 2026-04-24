@@ -208,6 +208,19 @@ function ShopContent() {
     return groups;
   }, [availableTagsMap, selectedCategory, selectedSubCategory]);
 
+  // Explicit display order for categories (used when multiple categories are visible at once)
+  const CATEGORY_DISPLAY_ORDER: Record<string, number> = {
+    'Poleras': 0,
+    'Soleras': 1,
+    'Hoodies': 2,
+    'Quarter Zip': 3,
+    'Jeans': 4,
+    'Jogger': 5,
+    'Bermudas': 6,
+    'Accesorios': 7,
+    'Otros': 8,
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -235,6 +248,23 @@ function ShopContent() {
       );
 
     return matchesSearch && matchesCategory && matchesTags && matchesSale;
+  }).sort((a, b) => {
+    const showingMultipleCategories = selectedCategory === 'all' || (!!CATEGORY_GROUPS[selectedCategory] && !selectedSubCategory);
+    // 1. When multiple categories are visible, group by category FIRST
+    //    so all Hoodies appear before all Quarter Zip regardless of sort_order
+    if (showingMultipleCategories) {
+      const aCatOrder = CATEGORY_DISPLAY_ORDER[a.category || ''] ?? 99;
+      const bCatOrder = CATEGORY_DISPLAY_ORDER[b.category || ''] ?? 99;
+      if (aCatOrder !== bCatOrder) return aCatOrder - bCatOrder;
+    }
+    // 2. Within the same category, respect sort_order (nulls go last)
+    const aOrder = a.sort_order ?? Infinity;
+    const bOrder = b.sort_order ?? Infinity;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    // 3. Then newest first
+    const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return bDate - aDate;
   });
 
   const toggleTag = (group: string, tagName: string) => {

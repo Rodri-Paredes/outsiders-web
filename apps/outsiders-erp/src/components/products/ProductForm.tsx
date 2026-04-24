@@ -1,6 +1,6 @@
 import { formatCurrency } from '../../lib/utils';
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock } from 'lucide-react';
+import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock, Ruler } from 'lucide-react';
 import { Product, ProductTag } from '../../lib/types';
 import { productService } from '../../services/productService';
 import { stockService } from '../../services/stockService';
@@ -11,6 +11,12 @@ import { Button } from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Toast from '../ui/Toast';
+import { supabase } from '../../lib/supabase';
+
+interface SizeGuideOption {
+  id: string;
+  material: string;
+}
 
 interface ProductFormProps {
   product?: Product | null;
@@ -51,6 +57,23 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const [availableTags, setAvailableTags] = useState<ProductTag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [loadingTags, setLoadingTags] = useState(false);
+
+  // Size guide state
+  const [sizeGuides, setSizeGuides] = useState<SizeGuideOption[]>([]);
+  const [selectedSizeGuideId, setSelectedSizeGuideId] = useState<string>(
+    (product as any)?.size_guide_id || ''
+  );
+
+  useEffect(() => {
+    // Load all size guides for the dropdown
+    supabase
+      .from('size_guides')
+      .select('id, material')
+      .order('material')
+      .then(({ data }) => {
+        if (data) setSizeGuides(data as SizeGuideOption[]);
+      });
+  }, []);
 
   // Computed: available sizes based on category
   const categorySizes = useMemo(() => {
@@ -316,6 +339,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         is_new_in: formData.is_new_in,
         original_price: formData.original_price || null,
         discount_percentage: formData.discount_percentage || null,
+        size_guide_id: selectedSizeGuideId || null,
         // Solo admins pueden guardar/modificar el precio de costo
         cost_price: isAdmin ? (formData.cost_price || null) : undefined,
       };
@@ -685,6 +709,30 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   )}
                 </div>
               )}
+
+              {/* ===== GUÍA DE TALLAS ===== */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <Ruler size={16} />
+                  Guía de Tallas
+                </h4>
+                <p className="text-xs text-gray-500">
+                  Selecciona qué guía de tallas se mostrará en la página de este producto.
+                  Si no se selecciona ninguna, se usará la guía del material asignado.
+                </p>
+                <select
+                  value={selectedSizeGuideId}
+                  onChange={(e) => setSelectedSizeGuideId(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm bg-white"
+                >
+                  <option value="">— Sin guía específica (usar por material)</option>
+                  {sizeGuides.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.material}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               {/* Imágenes */}
               <div>

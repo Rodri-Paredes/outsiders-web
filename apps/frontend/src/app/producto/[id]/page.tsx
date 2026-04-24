@@ -57,10 +57,21 @@ export default function ProductPage() {
     }
   }, [product?.id, anonId]);
 
-  // Cargar guía de tallas basada en el material del producto
+  // Cargar guía de tallas: primero por size_guide_id, luego por material tag
   useEffect(() => {
     if (!product) return;
-    // El material está en los tags del producto (tag_group = 'gramaje' o 'material')
+
+    // Si el producto tiene una guía asignada directamente, usarla
+    if ((product as any).size_guide_id) {
+      setSizeGuideLoading(true);
+      sizeGuideService.getById((product as any).size_guide_id).then((guide) => {
+        setSizeGuide(guide);
+        setSizeGuideLoading(false);
+      });
+      return;
+    }
+
+    // Fallback: buscar por material/gramaje tag
     const materialTag = product.tags?.find(
       (t) => t.tag && (t.tag.tag_group === 'gramaje' || t.tag.tag_group === 'material')
     );

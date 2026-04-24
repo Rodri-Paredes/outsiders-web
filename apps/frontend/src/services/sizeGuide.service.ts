@@ -46,4 +46,16 @@ export const sizeGuideService = {
     }
     return (data || []) as SizeGuide[];
   },
+
+  /** Obtiene una guía de tallas por su ID */
+  async getById(id: string): Promise<SizeGuide | null> {
+    const { data, error } = await supabase
+      .from('size_guides')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) return null;
+    return data as SizeGuide;
+  },
 };

@@ -31,6 +31,7 @@ export interface Product {
   is_visible: boolean
   is_new_in: boolean
   sort_order: number
+  size_guide_id: string | null
   created_at: string
   tags?: ProductTagAssignment[]
 }

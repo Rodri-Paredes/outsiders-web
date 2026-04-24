@@ -66,7 +66,7 @@ export const productsService = {
       .from('products')
       .select(`
         id, name, image_url, images, price, original_price, discount_percentage,
-        category, is_new_in, is_visible, sort_order, created_at,
+        category, is_new_in, is_visible, sort_order, size_guide_id, created_at,
         variants:product_variants(
           id, size,
           stock(quantity, branch_id)
