@@ -268,7 +268,7 @@ export default function ProductPage() {
                 {/* Desktop Grid View */}
                 <div className={`hidden lg:grid gap-4 mb-4 ${images.length === 1 ? 'grid-cols-1 w-full max-w-sm mx-auto' : 'grid-cols-2'}`}>
                   {images.map((img: string, index: number) => (
-                    <div key={`desktop-${index}`} className="aspect-[3/4] relative bg-gray-50 overflow-hidden group">
+                    <div key={`desktop-${index}`} className="aspect-[4/5] relative bg-gray-50 overflow-hidden group">
                       <Image
                         src={img}
                         alt={`${product.name} - view ${index + 1}`}
@@ -283,7 +283,7 @@ export default function ProductPage() {
                 </div>
 
                 {/* Mobile Carousel View */}
-                <div className="block lg:hidden aspect-square bg-gray-50 relative mb-4 overflow-hidden">
+                <div className="block lg:hidden aspect-[4/5] bg-gray-50 relative mb-4 overflow-hidden">
                   {images.map((img: string, index: number) => (
                     <Image
                       key={`${img}-${index}`}

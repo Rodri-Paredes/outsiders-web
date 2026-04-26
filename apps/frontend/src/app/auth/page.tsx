@@ -75,14 +75,7 @@ function AuthPageInner() {
       {/* RIGHT — form panel */}
       <div className="w-full md:w-1/2 lg:w-[45%] flex flex-col overflow-y-auto bg-[#0A0A0A]">
         {/* Top bar */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-0 shrink-0">
-          <Link href="/">
-            <img
-              src="/logos/logo inferior web.png"
-              alt="OUTSIDERS"
-              className="h-10 w-auto brightness-0 invert"
-            />
-          </Link>
+        <div className="flex items-center justify-end px-8 pt-8 pb-0 shrink-0">
           <Link
             href="/"
             className="text-[10px] text-white/40 hover:text-white transition-colors tracking-[0.2em] uppercase"
@@ -95,6 +88,17 @@ function AuthPageInner() {
         <div className="flex-1 flex items-center justify-center px-8 py-12">
           <div className="w-full max-w-sm">
 
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
+              <Link href="/">
+                <img
+                  src="/logos/navbar logo negro.png"
+                  alt="øutsiders"
+                  className="h-10 w-auto brightness-0 invert"
+                />
+              </Link>
+            </div>
+
             {/* Title */}
             <div className="mb-10">
               <h1 className="text-3xl font-light text-white tracking-tight mb-2">
@@ -102,7 +106,7 @@ function AuthPageInner() {
                   ? 'Recuperar\ncontraseña'
                   : mode === 'signup'
                   ? 'Crear\ncuenta'
-                  : 'Bienvenido\nde vuelta'}
+                  : 'Iniciar sesión'}
               </h1>
               {mode === 'forgot' && !resetSent && (
                 <p className="text-sm text-white/40 mt-3 leading-relaxed">
@@ -175,8 +179,7 @@ function AuthPageInner() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
-                      placeholder="tu@email.com"
+                      className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors"
                     />
                   </div>
 
@@ -191,8 +194,7 @@ function AuthPageInner() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors placeholder:text-white/20"
-                        placeholder="••••••••"
+                        className="w-full px-0 py-3 bg-transparent border-b border-white/15 text-white text-sm focus:outline-none focus:border-white transition-colors"
                         minLength={6}
                       />
                     </div>

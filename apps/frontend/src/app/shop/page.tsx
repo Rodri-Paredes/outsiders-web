@@ -495,7 +495,7 @@ function ShopContent() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 md:gap-6 md:gap-y-12">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                   <div key={i} className="space-y-4">
-                    <div className="aspect-[3/4] md:aspect-square bg-gray-50 animate-pulse border border-gray-100" />
+                    <div className="aspect-[4/5] bg-gray-50 animate-pulse border border-gray-100" />
                     <div className="h-4 bg-gray-100 animate-pulse w-2/3" />
                     <div className="h-4 bg-gray-100 animate-pulse w-1/3" />
                   </div>
@@ -531,7 +531,7 @@ function ShopContent() {
                       prefetch={true}
                     >
                       {/* Image */}
-                      <div className="aspect-[3/4] md:aspect-square bg-gray-50 relative overflow-hidden mb-4 border border-gray-100 flex items-center justify-center">
+                      <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden mb-4 border border-gray-100 flex items-center justify-center">
                         <ProductCardImage
                           src={(product as any).images?.[0] || product.image_url || ''}
                           alt={product.name}
