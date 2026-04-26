@@ -17,15 +17,18 @@ export const metadata: Metadata = {
   title: 'OUTSIDERS - Urban Streetwear',
   description: 'Ropa urbana para los que se atreven a ser diferentes. Diseños únicos y drops exclusivos.',
   keywords: ['streetwear', 'ropa urbana', 'fashion', 'outsiders', 'drops', 'bolivia'],
-  manifest: '/manifest.webmanifest',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'OUTSIDERS',
   },
   icons: {
-    apple: '/logos/logo-negro.png',
-    icon: '/logos/logo-negro.png',
+    apple: [{ url: '/icon-512.png', sizes: '512x512' }],
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
   },
   openGraph: {
     title: 'OUTSIDERS - Urban Streetwear',
