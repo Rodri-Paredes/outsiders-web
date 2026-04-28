@@ -94,14 +94,14 @@ function AuthPageInner() {
                 <img
                   src="/logos/navbar logo negro.png"
                   alt="øutsiders"
-                  className="h-10 w-auto brightness-0 invert"
+                  className="h-16 md:h-20 w-auto brightness-0 invert"
                 />
               </Link>
             </div>
 
             {/* Title */}
             <div className="mb-10">
-              <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+              <h1 className="text-lg font-light text-white tracking-tight mb-2">
                 {mode === 'forgot'
                   ? 'Recuperar\ncontraseña'
                   : mode === 'signup'

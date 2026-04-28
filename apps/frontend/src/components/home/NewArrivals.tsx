@@ -190,11 +190,17 @@ export function NewArrivals() {
 
                     {/* Color Swatches */}
                     {(product as any).hasStock ? (
+                      (product as any).web_only ? (
+                        <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-1">
+                          Solo Web
+                        </span>
+                      ) : (
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-black border border-gray-200"></div>
                         <div className="w-2.5 h-2.5 rounded-full bg-gray-300 border border-gray-200"></div>
                         <div className="w-2.5 h-2.5 rounded-full bg-[#fdfdfd] border border-gray-300 shadow-sm"></div>
                       </div>
+                      )
                     ) : (
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                         Sold Out

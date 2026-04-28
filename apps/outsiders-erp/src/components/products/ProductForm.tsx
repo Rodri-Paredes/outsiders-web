@@ -45,6 +45,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     discount_percentage: product?.discount_percentage || null as number | null,
     sku: (product as any)?.sku || '',
     is_new_in: product?.is_new_in ?? false,
+    web_only: product?.web_only ?? false,
   });
 
   const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
@@ -337,6 +338,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         image_url: imageUrls[0] || null,
         is_visible: true,
         is_new_in: formData.is_new_in,
+        web_only: formData.web_only,
         original_price: formData.original_price || null,
         discount_percentage: formData.discount_percentage || null,
         size_guide_id: selectedSizeGuideId || null,
@@ -531,6 +533,20 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 <span className="text-sm font-medium text-gray-700">
                   Marcar como <span className="font-bold text-black">NEW IN</span>
                   <span className="ml-2 text-xs text-gray-400">(muestra badge en tienda)</span>
+                </span>
+              </label>
+
+              {/* WEB ONLY toggle */}
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, web_only: !prev.web_only }))}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${formData.web_only ? 'bg-blue-600' : 'bg-gray-200'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.web_only ? 'left-5' : 'left-1'}`} />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  <span className="font-bold text-blue-700">Solo disponible en la web</span>
+                  <span className="ml-2 text-xs text-gray-400">(muestra badge "SOLO WEB" en tienda)</span>
                 </span>
               </label>
 

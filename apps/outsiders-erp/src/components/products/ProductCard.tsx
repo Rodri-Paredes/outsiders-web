@@ -120,6 +120,11 @@ export function ProductCard({
               NEW IN
             </span>
           )}
+          {product.web_only && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm tracking-wider">
+              SOLO WEB
+            </span>
+          )}
           {hasDiscount && (
             <span className="inline-flex items-center px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded shadow-sm">
               -{product.discount_percentage}%

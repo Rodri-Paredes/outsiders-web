@@ -12,6 +12,7 @@ export interface Product {
   drop_id?: string
   is_visible: boolean
   is_new_in?: boolean
+  web_only?: boolean
   sort_order?: number
   size_guide_id?: string | null
   created_at?: string

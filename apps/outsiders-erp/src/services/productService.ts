@@ -198,6 +198,7 @@ export const productService = {
       if (product.drop_id) insertData.drop_id = product.drop_id;
       if ((product as any).sku) insertData.sku = (product as any).sku;
       if ((product as any).is_new_in !== undefined) insertData.is_new_in = (product as any).is_new_in;
+      if ((product as any).web_only !== undefined) insertData.web_only = (product as any).web_only;
       if ((product as any).size_guide_id != null) insertData.size_guide_id = (product as any).size_guide_id;
 
       // Only include discount fields if they have values

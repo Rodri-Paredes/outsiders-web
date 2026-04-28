@@ -193,6 +193,9 @@ export function BestSellers({ config }: Props) {
                     {!(product as any).hasStock && (
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sold Out</span>
                     )}
+                    {(product as any).web_only && (product as any).hasStock && (
+                      <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-1">Solo Web</span>
+                    )}
                   </div>
                 </Link>
               </motion.div>

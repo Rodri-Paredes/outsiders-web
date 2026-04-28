@@ -174,6 +174,13 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                           </span>
                         </div>
                       )}
+                      {(product as any).web_only && (product as any).hasStock && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <span className="inline-block px-2 py-1 bg-blue-600 text-white text-[9px] font-bold uppercase tracking-widest">
+                            SOLO WEB
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="px-1 space-y-1">

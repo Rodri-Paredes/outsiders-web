@@ -552,6 +552,12 @@ function ShopContent() {
                               SOLD OUT
                             </span>
                           )}
+                          {/* Web Only Badge */}
+                          {hasStock && (product as any).web_only && (
+                            <span className="inline-block px-2 py-1.5 md:px-3 md:py-1.5 bg-blue-600 text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-center shadow-sm">
+                              SOLO WEB
+                            </span>
+                          )}
                         </div>
 
                         {/* Quick View Overlay (Desktop only) */}

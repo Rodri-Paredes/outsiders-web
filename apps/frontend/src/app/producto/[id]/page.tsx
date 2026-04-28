@@ -378,6 +378,11 @@ export default function ProductPage() {
                   Sold Out
                 </span>
               )}
+              {hasStock && (product as any).web_only && (
+                <span className="inline-block px-4 py-2 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest">
+                  Solo Web
+                </span>
+              )}
             </div>
 
             {/* Price */}
