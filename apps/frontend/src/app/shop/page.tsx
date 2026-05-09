@@ -3,35 +3,13 @@
 import { useEffect, useState, Suspense, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
 import { Search, Filter, X, Check } from 'lucide-react';
 import { useBranch } from '@/contexts/BranchContext';
-
-function ProductCardImage({ src, alt }: { src: string; alt: string }) {
-  const [error, setError] = useState(false);
-  if (error || !src) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-gray-200 text-6xl font-bold">
-        {alt.charAt(0)}
-      </div>
-    );
-  }
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-      className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
-      loading="lazy"
-      onError={() => setError(true)}
-    />
-  );
-}
+import { ProductImageCarousel } from '@/components/ProductImageCarousel';
 
 // Inner component handling the logic
 function ShopContent() {
@@ -532,9 +510,10 @@ function ShopContent() {
                     >
                       {/* Image */}
                       <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden mb-4 border border-gray-100 flex items-center justify-center">
-                        <ProductCardImage
-                          src={(product as any).images?.[0] || product.image_url || ''}
+                        <ProductImageCarousel
+                          images={(product as any).images || (product.image_url ? [product.image_url] : [])}
                           alt={product.name}
+                          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
 
                         {/* Badges Container */}
@@ -598,7 +577,7 @@ function ShopContent() {
                           <div className="flex items-center gap-1.5">
                             {( ((product as any).variants && (product as any).variants.length > 0)
                               ? (Array.from(new Set((product as any).variants.map((v: any) => v.size as string))) as string[])
-                              : ['S', 'M', 'L', 'XL']
+                              : ['XS', 'S', 'M', 'L', 'XL', 'XXL']
                             ).sort((a, b) => ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(a as string) - ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(b as string)).map((size) => {
                               const hasCurrentStock = (product as any).variants 
                                 ? (product as any).variants.some((v: any) => v.size === size && (v.stock?.reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0) || 0) > 0) 

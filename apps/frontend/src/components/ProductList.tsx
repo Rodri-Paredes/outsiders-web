@@ -1,20 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { Product } from '../lib/database.types';
 import { useCartStore } from '@/store/cartStore';
 import { productsService } from '../services/products.service';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { useBranch } from '@/contexts/BranchContext';
+import { ProductImageCarousel } from './ProductImageCarousel';
 
 export default function ProductList() {
   const addItem = useCartStore((state) => state.addItem);
   const { selectedBranch } = useBranch();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string>('M');
 
@@ -37,7 +36,7 @@ export default function ProductList() {
       return product.variants.map(v => v.size);
     }
     // Fallback to default sizes
-    return ['XS', 'S', 'M', 'L', 'XL'];
+    return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
   };
 
   // Calculate final price considering discount
@@ -92,10 +91,7 @@ export default function ProductList() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {products.map((product) => {
-        const productImages = (product as any).images || (product.image_url ? [product.image_url] : []);
-        const mainImage = productImages[0] || '';
-        const hoverImage = productImages[1] || mainImage;
-        const isHovered = hoveredProduct === product.id;
+        const productImages: string[] = (product as any).images || (product.image_url ? [product.image_url] : []);
         const discount = hasDiscount(product);
         const finalPrice = getFinalPrice(product);
 
@@ -103,48 +99,15 @@ export default function ProductList() {
           <article
             key={product.id}
             className="group cursor-pointer flex flex-col w-full"
-            onMouseEnter={() => setHoveredProduct(product.id)}
-            onMouseLeave={() => setHoveredProduct(null)}
             onClick={() => handleOpenSizeModal(product)}
           >
             {/* Image Container */}
             <div className="relative bg-[#f5f5f5] aspect-[4/5] w-full overflow-hidden mb-3">
-              {/* No discount badge as requested */}
-
-              {/* Hover Right Arrow */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                <svg width="6" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 9L5 5L1 1" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-
-              {/* Imagen principal */}
-              {mainImage && (
-                <Image
-                  src={mainImage}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className={`object-cover transition-opacity duration-500 ${isHovered && hoverImage !== mainImage ? 'opacity-0' : 'opacity-100'
-                    }`}
-                  loading="lazy"
-                  quality={80}
-                />
-              )}
-
-              {/* Imagen en hover */}
-              {hoverImage && hoverImage !== mainImage && (
-                <Image
-                  src={hoverImage}
-                  alt={`${product.name} - alternativa`}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                  className={`object-cover transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  loading="lazy"
-                  quality={80}
-                />
-              )}
+              <ProductImageCarousel
+                images={productImages}
+                alt={product.name}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              />
             </div>
 
             {/* Info Container */}

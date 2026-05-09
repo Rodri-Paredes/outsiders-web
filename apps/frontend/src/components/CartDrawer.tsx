@@ -11,7 +11,7 @@ interface CartDrawerProps {
   onClose: () => void;
 }
 
-const sizes = ['S', 'M', 'L', 'XL', 'TALLA UNICA'];
+const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'TALLA UNICA'];
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { items, updateQuantity, removeItem, updateSize, total } = useCartStore();
