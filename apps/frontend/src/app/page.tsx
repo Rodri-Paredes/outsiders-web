@@ -4,7 +4,7 @@ import { CategoryGrid } from '@/components/home/CategoryGrid';
 import { HomeSections } from '@/components/home/HomeSections';
 import { cmsService } from '@/services/cms.service';
 
-export const revalidate = 60; // ISR cache de 60 segundos
+export const dynamic = 'force-dynamic'; // SSR dinámico - evita el bug 304 de Netlify con ISR
 
 export default async function HomePage() {
   const [heroData, newInData, sectionsData, categoriesData] = await Promise.all([
