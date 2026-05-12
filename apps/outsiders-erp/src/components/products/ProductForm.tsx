@@ -48,6 +48,15 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     web_only: product?.web_only ?? false,
   });
 
+  // Local state for the discounted price input (instead of % field)
+  const [discountedPriceInput, setDiscountedPriceInput] = useState<string>(() => {
+    if (product?.original_price && product?.discount_percentage) {
+      const finalPrice = product.original_price * (1 - product.discount_percentage / 100);
+      return String(Math.round(finalPrice * 100) / 100);
+    }
+    return '';
+  });
+
   const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [sizesWithStock, setSizesWithStock] = useState<SizeWithStock[]>([]);
@@ -82,26 +91,33 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     return (SIZES_BY_CATEGORY[formData.category] || SIZES) as unknown as string[];
   }, [formData.category]);
 
-  // Computed: discount preview
+  // Computed: discount preview — driven by original_price + discount_percentage
   const discountPreview = useMemo(() => {
     if (formData.original_price && formData.discount_percentage && formData.discount_percentage > 0) {
       const finalPrice = formData.original_price * (1 - formData.discount_percentage / 100);
       return {
         originalPrice: formData.original_price,
         finalPrice: Math.round(finalPrice * 100) / 100,
-        percentage: formData.discount_percentage,
+        percentage: Math.round(formData.discount_percentage),
         savings: Math.round((formData.original_price - finalPrice) * 100) / 100,
       };
     }
     return null;
   }, [formData.original_price, formData.discount_percentage]);
 
-  // Auto-calculate price when discount changes
+  // When discountedPriceInput or original_price changes → recalculate discount_percentage and price
   useEffect(() => {
-    if (discountPreview) {
-      setFormData(prev => ({ ...prev, price: discountPreview.finalPrice }));
+    const originalPrice = formData.original_price;
+    const discountedPrice = parseFloat(discountedPriceInput);
+    if (originalPrice && originalPrice > 0 && !isNaN(discountedPrice) && discountedPrice > 0 && discountedPrice < originalPrice) {
+      const pct = Math.round(((originalPrice - discountedPrice) / originalPrice) * 10000) / 100;
+      setFormData(prev => ({ ...prev, discount_percentage: pct, price: discountedPrice }));
+    } else if (!isNaN(discountedPrice) && discountedPrice > 0) {
+      // discountedPrice >= originalPrice: no discount
+      setFormData(prev => ({ ...prev, discount_percentage: null }));
     }
-  }, [discountPreview]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [discountedPriceInput, formData.original_price]);
 
   // Load tags when category changes
   useEffect(() => {
@@ -265,6 +281,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       original_price: null,
       discount_percentage: null,
     }));
+    setDiscountedPriceInput('');
   };
 
   const validate = () => {
@@ -286,8 +303,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       newErrors.sizes = 'Agrega al menos una talla';
     }
 
-    if (formData.original_price && formData.original_price > 0 && !formData.discount_percentage) {
-      newErrors.discount_percentage = 'Ingresa el porcentaje de descuento';
+    if (formData.original_price && formData.original_price > 0 && (!discountedPriceInput || parseFloat(discountedPriceInput) <= 0)) {
+      newErrors.discounted_price = 'Ingresa el precio con descuento';
     }
 
     if (formData.discount_percentage && formData.discount_percentage > 0 && (!formData.original_price || formData.original_price <= 0)) {
@@ -585,7 +602,10 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, original_price: prev.price || 0, discount_percentage: 0 }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, original_price: prev.price || 0 }));
+                        setDiscountedPriceInput('');
+                      }}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
                     >
                       <Percent size={14} />
@@ -610,19 +630,17 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                         {errors.original_price && <p className="text-xs text-red-500 mt-1">{errors.original_price}</p>}
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Descuento (%)</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Precio con descuento (Bs.)</label>
                         <input
                           type="number"
-                          name="discount_percentage"
-                          step="1"
+                          step="0.01"
                           min="0"
-                          max="100"
-                          value={formData.discount_percentage ?? ''}
-                          onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.discount_percentage ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder="20"
+                          value={discountedPriceInput}
+                          onChange={(e) => setDiscountedPriceInput(e.target.value)}
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.discounted_price ? 'border-red-500' : 'border-gray-300'}`}
+                          placeholder="120.00"
                         />
-                        {errors.discount_percentage && <p className="text-xs text-red-500 mt-1">{errors.discount_percentage}</p>}
+                        {errors.discounted_price && <p className="text-xs text-red-500 mt-1">{errors.discounted_price}</p>}
                       </div>
                     </div>
 

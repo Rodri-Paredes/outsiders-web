@@ -24,6 +24,7 @@ export const SIZES = [
   'M',
   'L',
   'XL',
+  'XXL',
   'TALLA UNICA',
 ] as const
 
@@ -31,15 +32,15 @@ export type Size = (typeof SIZES)[number]
 
 // Tallas disponibles por categoría — el formulario usa esto dinámicamente
 export const SIZES_BY_CATEGORY: Record<string, readonly string[]> = {
-  Poleras: ['XS', 'S', 'M', 'L', 'XL'],
-  Soleras: ['XS', 'S', 'M', 'L', 'XL'],
-  Hoodies: ['XS', 'S', 'M', 'L', 'XL'],
-  'Quarter Zip': ['XS', 'S', 'M', 'L', 'XL'],
+  Poleras: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  Soleras: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  Hoodies: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+  'Quarter Zip': ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
   Jeans: ['38', '40', '42', '44', '46'],
-  Jogger: ['XS', 'S', 'M', 'L', 'XL'],
+  Jogger: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
   Bermudas: ['38', '40', '42', '44', '46'],
   Accesorios: ['TALLA UNICA'],
-  Otros: ['XS', 'S', 'M', 'L', 'XL', 'TALLA UNICA'],
+  Otros: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'TALLA UNICA'],
 } as const
 
 // ==================== PAYMENT TYPES ====================
