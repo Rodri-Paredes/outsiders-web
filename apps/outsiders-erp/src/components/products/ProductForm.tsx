@@ -91,19 +91,19 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     return (SIZES_BY_CATEGORY[formData.category] || SIZES) as unknown as string[];
   }, [formData.category]);
 
-  // Computed: discount preview — driven by original_price + discount_percentage
+  // Computed: discount preview — uses formData.price (exact user input) to avoid floating point drift
   const discountPreview = useMemo(() => {
-    if (formData.original_price && formData.discount_percentage && formData.discount_percentage > 0) {
-      const finalPrice = formData.original_price * (1 - formData.discount_percentage / 100);
+    if (formData.original_price && formData.discount_percentage && formData.discount_percentage > 0 && formData.price) {
+      const finalPrice = formData.price;
       return {
         originalPrice: formData.original_price,
-        finalPrice: Math.round(finalPrice * 100) / 100,
+        finalPrice: Math.round(finalPrice),
         percentage: Math.round(formData.discount_percentage),
-        savings: Math.round((formData.original_price - finalPrice) * 100) / 100,
+        savings: Math.round(formData.original_price - finalPrice),
       };
     }
     return null;
-  }, [formData.original_price, formData.discount_percentage]);
+  }, [formData.original_price, formData.discount_percentage, formData.price]);
 
   // When discountedPriceInput or original_price changes → recalculate discount_percentage and price
   useEffect(() => {

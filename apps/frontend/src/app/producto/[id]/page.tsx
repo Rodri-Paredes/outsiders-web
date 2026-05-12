@@ -118,10 +118,11 @@ export default function ProductPage() {
         if (foundProduct) {
           setProduct(foundProduct);
           
-          // Calculate available stock per size
+          // Calculate available stock per size — use branchStock (branch-filtered) when available
           const sizeStock: {[key: string]: number} = {};
-          foundProduct.variants?.forEach(variant => {
-            const totalStock = variant.stock?.reduce((sum, s) => sum + (s.quantity || 0), 0) || 0;
+          foundProduct.variants?.forEach((variant: any) => {
+            const stockArr = variant.branchStock ?? variant.stock;
+            const totalStock = stockArr?.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0) || 0;
             sizeStock[variant.size] = totalStock;
           });
           setAvailableSizes(sizeStock);
