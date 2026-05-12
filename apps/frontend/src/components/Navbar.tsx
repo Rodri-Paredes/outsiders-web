@@ -338,7 +338,7 @@ export default function Navbar() {
                 >
                   WhatsApp
                 </button>
-                <div className="border-t border-gray-200 pt-3 mt-1">
+                <div className="border-t border-gray-200 pt-3 mt-1 flex flex-col gap-3">
                   <Link
                     href={user ? '/perfil' : '/auth'}
                     className="text-[11px] tracking-[0.2em] font-medium uppercase text-black hover:text-gray-600 transition-colors"
@@ -346,6 +346,16 @@ export default function Navbar() {
                   >
                     {user ? 'MI PERFIL' : 'INICIAR SESIÓN'}
                   </Link>
+                  {mounted && selectedBranch && (
+                    <button
+                      type="button"
+                      onClick={() => { setShowModal(true); setMobileMenuOpen(false); }}
+                      className="flex items-center gap-1 text-[9px] tracking-[0.15em] text-gray-400 hover:text-gray-600 transition-colors text-left"
+                    >
+                      <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                      <span>{selectedBranch.label} · cambiar</span>
+                    </button>
+                  )}
                 </div>
               </nav>
             </div>
