@@ -152,7 +152,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({ 
-        activeBranch: state.activeBranch,
+        // activeBranch NO se persiste: si la sucursal fue modificada/eliminada en DB
+        // el ERP redirigiría a BranchSelectionPage y cargaría el estado fresco.
         user: state.user,
         isAuthenticated: state.isAuthenticated
       })

@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { BestSellersConfig } from '@/services/cms.service';
+import { useBranch } from '@/contexts/BranchContext';
 
 interface Props {
   config: BestSellersConfig;
@@ -17,11 +18,20 @@ export function BestSellers({ config }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const { selectedBranch, isLoaded: branchLoaded } = useBranch();
+  const branchId = selectedBranch?.id;
 
   useEffect(() => {
     setMounted(true);
-    loadProducts();
   }, []);
+
+  // Reload whenever branch context is ready or changes
+  useEffect(() => {
+    if (mounted && branchLoaded) {
+      loadProducts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, branchLoaded, branchId]);
 
   const loadProducts = async () => {
     try {
@@ -42,7 +52,7 @@ export function BestSellers({ config }: Props) {
           .eq('is_visible', true);
 
         if (data && data.length > 0) {
-          // Maintain CMS order & compute stock
+          // Maintain CMS order & compute stock filtered by the selected branch
           const mapped = ids
             .map(id => data.find(p => p.id === id))
             .filter(Boolean)
@@ -59,7 +69,12 @@ export function BestSellers({ config }: Props) {
               if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
 
               (p.variants || []).forEach((v: any) => {
-                (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
+                (v.stock || []).forEach((s: any) => {
+                  // Filter by selected branch; show aggregate stock if no branch selected yet
+                  if (!branchId || s.branch_id === branchId) {
+                    totalStock += s.quantity || 0;
+                  }
+                });
               });
 
               return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
@@ -70,14 +85,14 @@ export function BestSellers({ config }: Props) {
         }
       }
 
-      // Fallback: most recent products
-      const data = await productsService.getProducts();
+      // Fallback: most recent products filtered by branch
+      const data = await productsService.getProducts(branchId);
       setProducts(data.slice(0, 5));
     } catch (err) {
       console.error('[BestSellers] Error loading products:', err);
       // Silent fallback
       try {
-        const data = await productsService.getProducts();
+        const data = await productsService.getProducts(branchId);
         setProducts(data.slice(0, 5));
       } catch {}
     } finally {

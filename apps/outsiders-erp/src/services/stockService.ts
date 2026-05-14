@@ -101,7 +101,9 @@ export const stockService = {
   },
 
   /**
-   * Establecer stock absoluto (reemplaza el valor actual)
+   * Establecer stock absoluto (reemplaza el valor actual de forma ATÓMICA)
+   * Usa la función set_stock_absolute que hace UPSERT directo en DB,
+   * evitando el race condition del patrón READ → diff → WRITE.
    */
   async setStock(variantId: string, branchId: string, newQuantity: number) {
     try {
@@ -109,22 +111,10 @@ export const stockService = {
         throw new Error('La cantidad no puede ser negativa');
       }
 
-      // Primero obtenemos el stock actual
-      const currentStock = await this.getStockByVariant(variantId, branchId);
-
-      if (currentStock === null) {
-        // No existe registro de stock — inicializarlo directamente
-        await this.initializeStock(variantId, branchId, newQuantity);
-        return { success: true };
-      }
-
-      const difference = newQuantity - currentStock.quantity;
-
-      // Actualizamos con la diferencia
-      const { error } = await supabase.rpc('update_stock', {
+      const { error } = await supabase.rpc('set_stock_absolute', {
         p_variant_id: variantId,
         p_branch_id: branchId,
-        p_quantity: difference,
+        p_quantity: newQuantity,
       });
 
       if (error) throw error;

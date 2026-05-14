@@ -16,14 +16,21 @@ function mapProduct(p: any, branchId?: string): Product {
     });
   }
 
-  // Deep-copy variants with branch-filtered stock totals
-  const filteredVariants = p.variants?.map((v: any) => ({
-    ...v,
-    stock: v.stock || [],
-    branchStock: branchId
-      ? (v.stock || []).filter((s: any) => s.branch_id === branchId)
-      : (v.stock || []),
-  })) || [];
+  // Deep-copy variants with branch-filtered stock.
+  // When branchId is provided, `stock` is overwritten with ONLY the branch's records.
+  // This ensures every component that reads `v.stock` gets branch-correct data
+  // without requiring each component to switch to `branchStock`.
+  const filteredVariants = p.variants?.map((v: any) => {
+    const allStock = v.stock || [];
+    const branchStock = branchId
+      ? allStock.filter((s: any) => s.branch_id === branchId)
+      : allStock;
+    return {
+      ...v,
+      stock: branchStock,   // branch-filtered when branchId is provided
+      branchStock,
+    };
+  }) || [];
 
   let parsedImages: string[] = [];
   if (Array.isArray(p.images)) {

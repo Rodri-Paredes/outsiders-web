@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { NewInConfig } from '@/services/cms.service';
+import { useBranch } from '@/contexts/BranchContext';
 
 interface Props {
   config: NewInConfig;
@@ -16,10 +17,20 @@ interface Props {
 export function NewIn({ config }: Props) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const { selectedBranch, isLoaded: branchLoaded } = useBranch();
+  const branchId = selectedBranch?.id;
 
   useEffect(() => {
-    loadProducts();
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted && branchLoaded) {
+      loadProducts();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, branchLoaded, branchId]);
 
   const loadProducts = async () => {
     try {
@@ -54,7 +65,11 @@ export function NewIn({ config }: Props) {
 
               let totalStock = 0;
               (p.variants || []).forEach((v: any) => {
-                (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
+                (v.stock || []).forEach((s: any) => {
+                  if (!branchId || s.branch_id === branchId) {
+                    totalStock += s.quantity || 0;
+                  }
+                });
               });
 
               return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
@@ -91,7 +106,11 @@ export function NewIn({ config }: Props) {
 
         let totalStock = 0;
         (p.variants || []).forEach((v: any) => {
-          (v.stock || []).forEach((s: any) => { totalStock += s.quantity || 0; });
+          (v.stock || []).forEach((s: any) => {
+            if (!branchId || s.branch_id === branchId) {
+              totalStock += s.quantity || 0;
+            }
+          });
         });
 
         return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;

@@ -30,13 +30,15 @@ export default function ProductList() {
       });
   }, [selectedBranch]);
 
-  // Get available sizes from product variants
+  // Get available sizes from product variants — only those with a stock record for the selected branch.
+  // After mapProduct fix, v.stock already contains ONLY the branch-filtered records.
   const getAvailableSizes = (product: Product): string[] => {
     if (product.variants && product.variants.length > 0) {
-      return product.variants.map(v => v.size);
+      return product.variants
+        .filter((v: any) => (v.stock || []).length > 0)  // has stock record in selected branch
+        .map(v => v.size);
     }
-    // Fallback to default sizes
-    return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    return [];
   };
 
   // Calculate final price considering discount
@@ -137,15 +139,20 @@ export default function ProductList() {
                   )}
                 </div>
 
-                {/* Right Side: Sizes */}
+                {/* Right Side: Sizes — only variants with a stock record in the selected branch */}
                 <div className="flex items-center gap-1.5">
                   {(product.variants && product.variants.length > 0 
-                    ? Array.from(new Set(product.variants.map(v => v.size)))
-                    : ['S', 'M', 'L', 'XL']
+                    ? Array.from(new Set(
+                        product.variants
+                          .filter((v: any) => (v.stock || []).length > 0)
+                          .map(v => v.size)
+                      ))
+                    : []
                   ).sort((a, b) => ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(a) - ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(b)).map(size => {
                     const hasCurrentStock = product.variants 
-                      ? product.variants.some(v => v.size === size && (v.stock?.reduce((acc, curr) => acc + (curr.quantity || 0), 0) || 0) > 0) 
-                      : true;
+                      ? product.variants.some(v => v.size === size &&
+                          ((v.stock || []).reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0)) > 0)
+                      : false;
                     return (
                       <span 
                         key={size} 

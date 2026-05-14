@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Barcode } from 'lucide-react';
 import { Product } from '../lib/types';
 import { productService } from '../services/productService';
+import { stockService } from '../services/stockService';
 import { CATEGORIES } from '../lib/constants';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -48,36 +49,25 @@ export function SalesPage() {
     
     try {
       setLoading(true);
-      const data = await productService.getProducts({
-        search: search || undefined,
-        category: category || undefined,
-        includeHidden: false,
-      });
-      
-      // Filtrar productos que tienen stock disponible en la sucursal activa
-      const productsWithStock = await Promise.all(
-        data.map(async (product) => {
-          const variants = await productService.getProductVariants(product.id);
-          const hasStock = await Promise.all(
-            variants.map(async (variant) => {
-              try {
-                const { data: stockData } = await productService.supabase
-                  .from('stock')
-                  .select('quantity')
-                  .eq('variant_id', variant.id)
-                  .eq('branch_id', activeBranch.id)
-                  .single();
-                return stockData && stockData.quantity > 0;
-              } catch {
-                return false;
-              }
-            })
-          );
-          return hasStock.some(has => has) ? product : null;
-        })
+
+      // 2 queries en paralelo en lugar de O(N×M) requests individuales
+      const [data, allBranchStock] = await Promise.all([
+        productService.getProducts({
+          search: search || undefined,
+          category: category || undefined,
+          includeHidden: false,
+        }),
+        stockService.getStockByBranch(activeBranch.id),
+      ]);
+
+      // Set de IDs de productos que tienen al menos una variante con stock > 0
+      const productIdsWithStock = new Set(
+        (allBranchStock || [])
+          .filter((s: any) => (s.quantity || 0) > 0 && s.variant?.product?.id)
+          .map((s: any) => s.variant.product.id)
       );
-      
-      setProducts(productsWithStock.filter(p => p !== null) as Product[]);
+
+      setProducts(data.filter(product => productIdsWithStock.has(product.id)));
     } catch (error) {
       Toast.error('Error al cargar productos');
       console.error(error);

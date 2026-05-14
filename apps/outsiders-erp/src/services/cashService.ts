@@ -123,7 +123,7 @@ export const cashService = {
       
       const cash_difference = closingAmount - expected_cash;
 
-      // Actualizar caja
+      // Actualizar caja — solo si todavía está ABIERTA (evita doble cierre concurrente)
       const { data, error } = await supabase
         .from('cash_registers')
         .update({
@@ -139,10 +139,12 @@ export const cashService = {
           cash_difference
         })
         .eq('id', cashRegisterId)
+        .eq('status', 'ABIERTA') // Guard: solo cierra si sigue abierta
         .select()
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error('La caja ya fue cerrada por otro usuario o no existe');
       return data as CashRegister;
     } catch (error) {
       console.error('Error closing cash register:', error);

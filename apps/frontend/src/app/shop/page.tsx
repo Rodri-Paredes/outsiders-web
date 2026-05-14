@@ -573,15 +573,21 @@ function ShopContent() {
                             )}
                           </div>
 
-                          {/* Right Side: Sizes */}
+                          {/* Right Side: Sizes — only variants with a stock record in the selected branch */}
                           <div className="flex items-center gap-1.5">
                             {( ((product as any).variants && (product as any).variants.length > 0)
-                              ? (Array.from(new Set((product as any).variants.map((v: any) => v.size as string))) as string[])
-                              : ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+                              ? (Array.from(new Set(
+                                  (product as any).variants
+                                    .filter((v: any) => (v.stock || []).length > 0)
+                                    .map((v: any) => v.size as string)
+                                )) as string[])
+                              : []
                             ).sort((a, b) => ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(a as string) - ['XS', 'S', 'M', 'L', 'XL', 'XXL'].indexOf(b as string)).map((size) => {
+                              // After mapProduct fix, v.stock already contains only the selected branch's records
                               const hasCurrentStock = (product as any).variants 
-                                ? (product as any).variants.some((v: any) => v.size === size && (v.stock?.reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0) || 0) > 0) 
-                                : true;
+                                ? (product as any).variants.some((v: any) => v.size === size &&
+                                    ((v.stock || []).reduce((acc: number, curr: any) => acc + (curr.quantity || 0), 0)) > 0)
+                                : false;
                               return (
                                 <span 
                                   key={size} 

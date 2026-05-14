@@ -165,8 +165,8 @@ export const useCartStore = create<CartState>((set, get) => ({
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
     // Total de descuentos individuales
     const itemDiscountsTotal = items.reduce((sum, item) => sum + item.itemDiscount, 0)
-    // Total = subtotal - descuentos individuales - descuento global
-    const total = subtotal - itemDiscountsTotal - discount
+    // Total = subtotal - descuentos individuales - descuento global (mínimo 0)
+    const total = Math.max(0, subtotal - itemDiscountsTotal - discount)
 
     set({ subtotal, total })
   },

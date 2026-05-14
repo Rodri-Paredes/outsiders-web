@@ -259,37 +259,44 @@ export const productService = {
   },
 
   /**
-   * Eliminar un producto con todos sus datos relacionados
+   * Eliminar un producto con todos sus datos relacionados.
+   * NOTA: Las operaciones se ejecutan en secuencia; si alguna falla se lanza el error
+   * para que el caller lo capture. Idealmente migrar a una RPC transaccional en DB.
    */
   async deleteProduct(id: string) {
     try {
       // 1. Obtener todas las variantes del producto
-      const { data: variants } = await supabase
+      const { data: variants, error: variantsFetchError } = await supabase
         .from('product_variants')
         .select('id')
         .eq('product_id', id);
+
+      if (variantsFetchError) throw variantsFetchError;
 
       if (variants && variants.length > 0) {
         const variantIds = variants.map((v) => v.id);
 
         // 2. Eliminar todos los registros de stock de esas variantes
-        await supabase
+        const { error: stockError } = await supabase
           .from('stock')
           .delete()
           .in('variant_id', variantIds);
+        if (stockError) throw stockError;
 
         // 3. Eliminar las variantes
-        await supabase
+        const { error: variantsDeleteError } = await supabase
           .from('product_variants')
           .delete()
           .in('id', variantIds);
+        if (variantsDeleteError) throw variantsDeleteError;
       }
 
       // 4. Eliminar asignaciones de tags
-      await supabase
+      const { error: tagsError } = await supabase
         .from('product_tag_assignments')
         .delete()
         .eq('product_id', id);
+      if (tagsError) throw tagsError;
 
       // 5. Eliminar el producto
       const { error } = await supabase

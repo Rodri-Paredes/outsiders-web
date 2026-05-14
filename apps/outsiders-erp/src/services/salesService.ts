@@ -25,11 +25,24 @@ export const salesService = {
     customer_phone?: string;
   }) {
     try {
+      // Para ventas REGALO: la función DB recalcula el total ignorando el frontend.
+      // Calculamos el descuento necesario para que v_total quede en 0 en la BD.
+      let discountAmount = saleData.discount_amount;
+      if (saleData.payment_type === 'REGALO') {
+        const realSubtotal = saleData.items.reduce(
+          (sum, item) => sum + item.unit_price * item.quantity, 0
+        );
+        const itemDiscountsTotal = saleData.items.reduce(
+          (sum, item) => sum + (item.item_discount || 0), 0
+        );
+        discountAmount = realSubtotal - itemDiscountsTotal;
+      }
+
       // Usar la función transaccional que valida todo y ejecuta los triggers automáticamente
       const { data, error } = await supabase.rpc('create_complete_sale', {
         p_branch_id: saleData.branch_id,
         p_items: saleData.items,
-        p_discount_amount: saleData.discount_amount,
+        p_discount_amount: discountAmount,
         p_payment_type: saleData.payment_type,
         p_payment_details: saleData.payment_details || null,
         p_customer_phone: saleData.customer_phone || null,

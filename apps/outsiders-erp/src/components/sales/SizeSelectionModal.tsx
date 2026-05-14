@@ -34,25 +34,22 @@ export function SizeSelectionModal({
   const loadVariants = async () => {
     try {
       setLoading(true);
-      const productVariants = await productService.getProductVariants(product.id);
 
-      // Obtener stock de cada variante
-      const variantsWithStock = await Promise.all(
-        productVariants.map(async (variant) => {
-          try {
-            const stock = await stockService.getStockByVariant(variant.id, branchId);
-            return {
-              ...variant,
-              stock: stock?.quantity || 0,
-            };
-          } catch (error) {
-            return {
-              ...variant,
-              stock: 0,
-            };
-          }
-        })
+      // 2 queries en paralelo en lugar de 1 por variante
+      const [productVariants, allStock] = await Promise.all([
+        productService.getProductVariants(product.id),
+        stockService.getStockByProduct(product.id, branchId),
+      ]);
+
+      // Mapa variant_id → quantity para lookup O(1)
+      const stockMap = new Map<string, number>(
+        (allStock || []).map((s: any) => [s.variant_id, s.quantity || 0])
       );
+
+      const variantsWithStock = productVariants.map((variant) => ({
+        ...variant,
+        stock: stockMap.get(variant.id) ?? 0,
+      }));
 
       setVariants(variantsWithStock);
     } catch (error) {
