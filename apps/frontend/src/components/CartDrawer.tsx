@@ -3,6 +3,7 @@
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 import { useCartStore } from '@/store/cartStore';
 import { useState } from 'react';
 
@@ -77,7 +78,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     <div className="w-20 h-20 bg-dark-card flex-shrink-0 relative overflow-hidden">
                       {item.image_url ? (
                         <Image
-                          src={item.image_url}
+                          src={getWeservUrl(item.image_url, { w: 200 })}
                           alt={item.name}
                           fill
                           sizes="80px"

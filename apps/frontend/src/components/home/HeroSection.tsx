@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { getWeservUrl } from '@/utils/weserv';
 
 export function HeroSection({ content }: { content?: any }) {
   const images = content?.images || [];
@@ -57,7 +58,7 @@ export function HeroSection({ content }: { content?: any }) {
               className="w-full h-full"
             >
               <Image
-                src={displayImages[mobileIndex]}
+                src={getWeservUrl(displayImages[mobileIndex], { w: 1200 })}
                 alt={`Hero Image ${mobileIndex + 1}`}
                 fill
                 className="object-cover object-center"
@@ -101,7 +102,7 @@ export function HeroSection({ content }: { content?: any }) {
               className="w-full h-full"
             >
               <Image
-                src={img}
+                src={getWeservUrl(img, { w: 1920 })}
                 alt={`Hero Image ${idx + 1}`}
                 fill
                 className="object-cover"

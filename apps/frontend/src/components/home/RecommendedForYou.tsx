@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 import { motion } from 'framer-motion';
 import { recommendationsService } from '@/services/recommendations.service';
 import { Product } from '@/lib/database.types';
@@ -109,7 +110,7 @@ export function RecommendedForYou({ anonId, currentProductId, currentCategory, b
                   <div className="aspect-[4/5] bg-[#f0f0f0] w-full relative overflow-hidden mb-2">
                     {product.images[0] ? (
                       <Image
-                        src={product.images[0]}
+                        src={getWeservUrl(product.images[0], { w: 600 })}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 12.5vw"

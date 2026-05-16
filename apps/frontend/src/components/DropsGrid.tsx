@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 import { Product } from '@/lib/database.types';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
@@ -129,7 +130,7 @@ export default function DropsGrid() {
 
                 {/* Imagen principal */}
                 <Image
-                  src={mainImage}
+                  src={getWeservUrl(mainImage, { w: 600 })}
                   alt={product.name}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -141,7 +142,7 @@ export default function DropsGrid() {
 
                 {/* Imagen en hover */}
                 <Image
-                  src={altImage}
+                  src={getWeservUrl(altImage, { w: 600 })}
                   alt={`${product.name} - vista alternativa`}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

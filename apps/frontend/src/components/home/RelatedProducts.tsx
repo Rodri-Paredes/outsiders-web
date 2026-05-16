@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/database.types';
@@ -154,7 +155,7 @@ export function RelatedProducts({ currentProductId, category, branchId }: Props)
                   <div className="aspect-[4/5] bg-[#f5f5f5] w-full relative overflow-hidden mb-3">
                     {product.images[0] ? (
                       <Image
-                        src={product.images[0]}
+                        src={getWeservUrl(product.images[0], { w: 600 })}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"

@@ -9,6 +9,7 @@ import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { BestSellersConfig } from '@/services/cms.service';
 import { useBranch } from '@/contexts/BranchContext';
+import { getWeservUrl } from '@/utils/weserv';
 
 interface Props {
   config: BestSellersConfig;
@@ -170,7 +171,7 @@ export function BestSellers({ config }: Props) {
                   <div className="aspect-[4/5] bg-[#f5f5f5] w-full relative overflow-hidden mb-3">
                     {images[0] ? (
                       <Image
-                        src={images[0]}
+                        src={getWeservUrl(images[0], { w: 600 })}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"

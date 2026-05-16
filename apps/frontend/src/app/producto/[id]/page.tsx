@@ -13,6 +13,7 @@ import { RecommendedForYou } from '@/components/home/RecommendedForYou';
 import { useAnonId } from '@/hooks/useAnonId';
 import { recommendationsService } from '@/services/recommendations.service';
 import { sizeGuideService, SizeGuide } from '@/services/sizeGuide.service';
+import { getWeservUrl } from '@/utils/weserv';
 import { useAuth } from '@/contexts/AuthContext';
 import { favoritesService } from '@/services/favorites.service';
 
@@ -271,7 +272,7 @@ export default function ProductPage() {
                   {images.map((img: string, index: number) => (
                     <div key={`desktop-${index}`} className="aspect-[4/5] relative bg-gray-50 overflow-hidden group">
                       <Image
-                        src={img}
+                        src={getWeservUrl(img, { w: 1200 })}
                         alt={`${product.name} - view ${index + 1}`}
                         fill
                         sizes="33vw"
@@ -288,7 +289,7 @@ export default function ProductPage() {
                   {images.map((img: string, index: number) => (
                     <Image
                       key={`${img}-${index}`}
-                      src={img}
+                      src={getWeservUrl(img, { w: 800 })}
                       alt={`${product.name} - view ${index + 1}`}
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
@@ -333,7 +334,7 @@ export default function ProductPage() {
                         }`}
                       >
                         <Image
-                          src={img}
+                          src={getWeservUrl(img, { w: 200 })}
                           alt={`${product.name} ${index + 1}`}
                           fill
                           sizes="64px"

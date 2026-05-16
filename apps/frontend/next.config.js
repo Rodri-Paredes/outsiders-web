@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // Optimization is handled by images.weserv.nl proxy — no server-side processing needed
     unoptimized: true,
     remotePatterns: [
       {
@@ -11,6 +12,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.weserv.nl',
         pathname: '/**',
       },
     ],

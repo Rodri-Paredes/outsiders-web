@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { useBranch, BRANCHES as BRANCH_OPTIONS } from '@/contexts/BranchContext';
+import { getWeservUrl } from '@/utils/weserv';
 
 // Remove local BRANCHES constant — read from context
 
@@ -225,7 +226,7 @@ export function CartDrawer() {
                       <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100 relative overflow-hidden">
                         {item.image_url ? (
                           <Image
-                            src={item.image_url}
+                            src={getWeservUrl(item.image_url, { w: 200 })}
                             alt={item.name}
                             fill
                             sizes="(max-width: 768px) 80px, 96px"

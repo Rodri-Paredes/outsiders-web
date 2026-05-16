@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, MouseEvent, TouchEvent } from 'react';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 
 interface Props {
   images: string[];
@@ -91,7 +92,7 @@ export function ProductImageCarousel({
       {validImages.map((src, i) => (
         <Image
           key={src + i}
-          src={src}
+          src={getWeservUrl(src, { w: 600 })}
           alt={i === 0 ? alt : `${alt} - ${i + 1}`}
           fill
           sizes={sizes}

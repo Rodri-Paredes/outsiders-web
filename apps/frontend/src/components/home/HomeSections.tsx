@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { HomeSection } from '@/services/cms.service';
@@ -151,7 +152,7 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                     <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden mb-3 border border-gray-100">
                       {images[0] ? (
                         <Image
-                          src={images[0]}
+                          src={getWeservUrl(images[0], { w: 600 })}
                           alt={product.name}
                           fill
                           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"

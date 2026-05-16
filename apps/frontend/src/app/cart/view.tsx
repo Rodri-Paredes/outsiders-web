@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCartStore } from '@/store/cartStore';
 import { sendWhatsAppOrder } from '@/utils/whatsapp';
+import { getWeservUrl } from '@/utils/weserv';
 
 export default function CartView() {
   const items = useCartStore((state) => state.items);
@@ -58,7 +59,7 @@ export default function CartView() {
             <div className="relative w-24 h-32 bg-dark-bg overflow-hidden flex-shrink-0">
               {item.image_url ? (
                 <Image
-                  src={item.image_url}
+                  src={getWeservUrl(item.image_url, { w: 200 })}
                   alt={item.name}
                   fill
                   className="object-cover"

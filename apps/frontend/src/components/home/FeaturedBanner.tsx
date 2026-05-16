@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { getWeservUrl } from '@/utils/weserv';
 
 export function FeaturedBanner() {
   return (
@@ -15,7 +16,7 @@ export function FeaturedBanner() {
             <div className="aspect-[3/4] relative w-full overflow-hidden group">
               <div className="absolute inset-0 bg-gray-100 animate-pulse"></div>
               <Image
-                src="https://obrsjuqzmllnfmldlgby.supabase.co/storage/v1/object/public/web/DSC09638.jpg"
+                src={getWeservUrl("https://obrsjuqzmllnfmldlgby.supabase.co/storage/v1/object/public/web/DSC09638.jpg", { w: 1200 })}
                 alt="Featured Collection"
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-105"

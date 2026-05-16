@@ -7,6 +7,7 @@ import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { getWeservUrl } from '@/utils/weserv';
 
 export function NewArrivals() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -160,7 +161,7 @@ export function NewArrivals() {
 
                     {product.image_url || (product as any).images?.[0] ? (
                       <Image
-                        src={(product as any).images?.[0] || product.image_url || ''}
+                        src={getWeservUrl((product as any).images?.[0] || product.image_url || '', { w: 600 })}
                         alt={product.name}
                         fill
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
