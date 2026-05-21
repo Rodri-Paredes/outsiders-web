@@ -7,6 +7,7 @@ import { getWeservUrl } from '@/utils/weserv';
 import { motion } from 'framer-motion';
 import { recommendationsService } from '@/services/recommendations.service';
 import { Product } from '@/lib/database.types';
+import { formatCurrency } from '@/utils/format';
 
 interface Props {
   anonId: string;
@@ -137,15 +138,15 @@ export function RecommendedForYou({ anonId, currentProductId, currentCategory, b
                     {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
                       <div className="flex items-center gap-1">
                         <span className="text-[9px] text-gray-400 line-through">
-                          Bs. {Number(product.original_price).toFixed(2)}
+                          {formatCurrency(Number(product.original_price))}
                         </span>
                         <span className="text-[10px] font-bold text-black">
-                          Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                          {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
                         </span>
                       </div>
                     ) : (
                       <span className="text-[10px] font-bold text-black">
-                        Bs. {Number(product.price).toFixed(2)}
+                        {formatCurrency(Number(product.price))}
                       </span>
                     )}
                   </div>

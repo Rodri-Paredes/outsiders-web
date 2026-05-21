@@ -8,6 +8,7 @@ import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
+import { formatCurrency } from '@/utils/format';
 
 export default function DropsGrid() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -162,7 +163,7 @@ export default function DropsGrid() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] md:text-[11px] font-bold text-black">
-                      ${Number(product.price).toFixed(2)}
+                      {formatCurrency(Number(product.price))}
                     </span>
                   </div>
                 </div>
@@ -216,7 +217,7 @@ export default function DropsGrid() {
               {selectedProduct.name}
             </h3>
             <p className="text-lg text-white mb-6 font-light">
-              Bs. {selectedProduct.price.toFixed(2)}
+              {formatCurrency(selectedProduct.price)}
             </p>
 
             <div className="mb-6">

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { formatCurrency } from '@/utils/format';
 
 interface Product {
   id: string;
@@ -181,11 +182,11 @@ export default function MisPedidosPage() {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mb-2">
                           <p className="flex items-center gap-1"><span className="text-gray-400 text-xs uppercase tracking-wider">Talla:</span> <span className="font-medium text-gray-900">{item.size}</span></p>
                           <p className="flex items-center gap-1"><span className="text-gray-400 text-xs uppercase tracking-wider">Cantidad:</span> <span className="font-medium text-gray-900">{item.quantity}</span></p>
-                          <p className="flex items-center gap-1"><span className="text-gray-400 text-xs uppercase tracking-wider">Precio:</span> <span className="font-medium text-gray-900">Bs {Number(item.unit_price).toFixed(2)}</span></p>
+                          <p className="flex items-center gap-1"><span className="text-gray-400 text-xs uppercase tracking-wider">Precio:</span> <span className="font-medium text-gray-900">{formatCurrency(Number(item.unit_price))}</span></p>
                         </div>
                         
                         <div className="text-sm font-semibold text-gray-900">
-                          Total: Bs {Number(item.subtotal).toFixed(2)}
+                          Total: {formatCurrency(Number(item.subtotal))}
                         </div>
                       </div>
 
@@ -213,7 +214,7 @@ export default function MisPedidosPage() {
                 </div>
                 <div className="text-right w-full sm:w-auto">
                     <span className="text-gray-500 uppercase tracking-widest text-xs mr-2">Total del Pedido</span>
-                    <span className="font-black text-xl text-gray-900">Bs {Number(order.total_amount).toFixed(2)}</span>
+                    <span className="font-black text-xl text-gray-900">{formatCurrency(Number(order.total_amount))}</span>
                 </div>
               </div>
 

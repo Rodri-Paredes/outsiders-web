@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { getWeservUrl } from '@/utils/weserv';
 import { useCartStore } from '@/store/cartStore';
 import { useState } from 'react';
+import { formatCurrency } from '@/utils/format';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -99,7 +100,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         {item.name}
                       </h3>
                       <p className="text-gray-light text-xs mb-2">
-                        Bs. {item.price.toFixed(2)}
+                        {formatCurrency(item.price)}
                       </p>
 
                       {/* Size Selector */}
@@ -169,7 +170,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             {/* Total */}
             <div className="flex items-center justify-between text-lg">
               <span className="text-gray-light tracking-wider uppercase text-sm">Total</span>
-              <span className="text-white font-light text-xl">Bs. {total.toFixed(2)}</span>
+              <span className="text-white font-light text-xl">{formatCurrency(total)}</span>
             </div>
 
             {/* Checkout Button */}

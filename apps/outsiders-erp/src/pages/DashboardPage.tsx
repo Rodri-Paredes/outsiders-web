@@ -302,7 +302,7 @@ export default function DashboardPage() {
                                 )}
                                 {item.item_discount > 0 && (
                                   <div className="text-xs text-red-600 mt-1">
-                                    Desc. item: -Bs {item.item_discount.toFixed(2)}
+                                    Desc. item: -{formatCurrency(item.item_discount)}
                                   </div>
                                 )}
                               </div>
@@ -345,12 +345,12 @@ export default function DashboardPage() {
                                 <div className="text-xs text-gray-600 mt-2">
                                   {totalItemDiscounts > 0 && (
                                     <div className="text-red-600">
-                                      Desc. items: -Bs {totalItemDiscounts.toFixed(2)}
+                                      Desc. items: -{formatCurrency(totalItemDiscounts)}
                                     </div>
                                   )}
                                   {sale.discount_amount > 0 && (
                                     <div className="text-red-600">
-                                      Desc. adicional: -Bs {sale.discount_amount.toFixed(2)}
+                                      Desc. adicional: -{formatCurrency(sale.discount_amount)}
                                     </div>
                                   )}
                                   <div className="font-semibold text-gray-900 mt-1">

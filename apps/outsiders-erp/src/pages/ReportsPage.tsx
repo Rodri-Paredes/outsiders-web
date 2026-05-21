@@ -370,7 +370,7 @@ export default function ReportsPage() {
                                     </div>
                                     {item.item_discount > 0 && (
                                       <div className="text-xs text-red-600 mt-0.5">
-                                        Desc. item: -Bs {item.item_discount.toFixed(2)}
+                                        Desc. item: -{formatCurrency(item.item_discount)}
                                       </div>
                                     )}
                                   </div>
@@ -415,12 +415,12 @@ export default function ReportsPage() {
                               <div className="mt-2 p-2 bg-red-50 rounded text-xs space-y-1">
                                 {totalItemDiscounts > 0 && (
                                   <div className="text-red-700">
-                                    Desc. items: -Bs {totalItemDiscounts.toFixed(2)}
+                                    Desc. items: -{formatCurrency(totalItemDiscounts)}
                                   </div>
                                 )}
                                 {sale.discount_amount > 0 && (
                                   <div className="text-red-700">
-                                    Desc. adicional: -Bs {sale.discount_amount.toFixed(2)}
+                                    Desc. adicional: -{formatCurrency(sale.discount_amount)}
                                   </div>
                                 )}
                                 <div className="font-semibold text-gray-900 pt-1 border-t border-red-200">

@@ -4,6 +4,7 @@ import { Drop } from '../../lib/types';
 import { dropService } from '../../services/dropService';
 import { productService } from '../../services/productService';
 import { Button } from '../ui/Button';
+import { formatCurrency } from '../../lib/utils';
 import Toast from '../ui/Toast';
 
 interface DropProductsModalProps {
@@ -139,7 +140,7 @@ export function DropProductsModal({ drop, onClose }: DropProductsModalProps) {
                         <div className="flex-1">
                           <div className="font-semibold">{product.name}</div>
                           <div className="text-sm text-gray-600">
-                            Bs {product.price?.toFixed(2)} • {product.category}
+                            {formatCurrency(product.price || 0)} • {product.category}
                           </div>
                         </div>
 
@@ -201,7 +202,7 @@ export function DropProductsModal({ drop, onClose }: DropProductsModalProps) {
                           <div className="flex-1 min-w-0">
                             <div className="font-medium truncate">{product.name}</div>
                             <div className="text-sm text-gray-600">
-                              Bs {product.price.toFixed(2)}
+                              {formatCurrency(product.price)}
                             </div>
                           </div>
 

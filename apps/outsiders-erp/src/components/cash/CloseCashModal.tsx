@@ -3,6 +3,7 @@ import { X, AlertTriangle } from 'lucide-react';
 import { cashService } from '../../services/cashService';
 import { useAuthStore } from '../../store/authStore';
 import { CashRegister } from '../../lib/types';
+import { formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import Input from '../ui/Input';
 import Toast from '../ui/Toast';
@@ -72,28 +73,28 @@ export function CloseCashModal({ cashRegister, summary, onClose, onSuccess }: Cl
 
             <div className="flex justify-between text-xs sm:text-sm">
               <span>Fondo inicial:</span>
-              <span className="font-semibold">Bs {cashRegister.opening_amount.toFixed(2)}</span>
+              <span className="font-semibold">{formatCurrency(cashRegister.opening_amount)}</span>
             </div>
 
             <div className="flex justify-between text-sm">
               <span>Ventas en efectivo:</span>
-              <span className="font-semibold">Bs {summary?.total_cash?.toFixed(2) || '0.00'}</span>
+              <span className="font-semibold">{formatCurrency(summary?.total_cash || 0)}</span>
             </div>
 
             <div className="flex justify-between text-sm">
               <span>Ventas con QR:</span>
-              <span className="font-semibold">Bs {summary?.total_qr?.toFixed(2) || '0.00'}</span>
+              <span className="font-semibold">{formatCurrency(summary?.total_qr || 0)}</span>
             </div>
 
             <div className="flex justify-between text-sm">
               <span>Ventas con Tarjeta:</span>
-              <span className="font-semibold">Bs {summary?.total_card?.toFixed(2) || '0.00'}</span>
+              <span className="font-semibold">{formatCurrency(summary?.total_card || 0)}</span>
             </div>
 
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between text-sm font-bold">
                 <span>Total de ventas:</span>
-                <span>Bs {summary?.total_sales?.toFixed(2) || '0.00'}</span>
+                <span>{formatCurrency(summary?.total_sales || 0)}</span>
               </div>
               {summary?.sales_count > 0 && (
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -106,7 +107,7 @@ export function CloseCashModal({ cashRegister, summary, onClose, onSuccess }: Cl
             <div className="border-t pt-2 mt-2">
               <div className="flex justify-between font-bold text-green-600">
                 <span>Efectivo esperado:</span>
-                <span>Bs {expectedCash.toFixed(2)}</span>
+                <span>{formatCurrency(expectedCash)}</span>
               </div>
             </div>
           </div>
@@ -133,7 +134,7 @@ export function CloseCashModal({ cashRegister, summary, onClose, onSuccess }: Cl
                     {difference > 0 ? 'Sobrante' : difference < 0 ? 'Faltante' : 'Sin diferencia'}
                   </p>
                   <p className={`text-2xl font-bold ${difference > 0 ? 'text-green-700' : difference < 0 ? 'text-red-700' : 'text-green-700'}`}>
-                    Bs {Math.abs(difference).toFixed(2)}
+                    {formatCurrency(Math.abs(difference))}
                   </p>
                 </div>
               </div>

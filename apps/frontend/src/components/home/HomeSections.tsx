@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { HomeSection } from '@/services/cms.service';
 import { Product } from '@/lib/database.types';
+import { formatCurrency } from '@/utils/format';
 
 interface Props {
   sections: HomeSection[];
@@ -190,13 +191,13 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                       </h3>
                       {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-gray-400 line-through">Bs. {Number(product.original_price).toFixed(2)}</span>
+                          <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.original_price))}</span>
                           <span className="text-xs font-bold text-black">
-                            Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                            {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs font-bold text-black">Bs. {Number(product.price).toFixed(2)}</span>
+                        <span className="text-xs font-bold text-black">{formatCurrency(Number(product.price))}</span>
                       )}
                     </div>
                   </Link>

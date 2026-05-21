@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBag, UserIcon, Heart, Lock, LogOut, Package, Calendar, ChevronRight, Trash2, X } from 'lucide-react';
+import { formatCurrency } from '@/utils/format';
 
 type Tab = 'orders' | 'data' | 'favorites' | 'password';
 
@@ -178,7 +179,7 @@ function OrdersTab({ userId }: { userId: string }) {
                       {item.name || item.product_name} <span className="text-gray-400">x{item.quantity}</span>
                       {item.size && <span className="text-gray-400 ml-1">({item.size})</span>}
                     </span>
-                    <span className="font-medium text-black">Bs {(item.price * item.quantity).toFixed(0)}</span>
+                    <span className="font-medium text-black">{formatCurrency(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>
@@ -186,7 +187,7 @@ function OrdersTab({ userId }: { userId: string }) {
                 <span className="text-xs text-gray-500 uppercase tracking-wider">
                   {order.delivery_method === 'pickup' ? 'Recojo en tienda' : order.city || 'Envío'}
                 </span>
-                <span className="text-sm font-bold text-black">Total: Bs {Number(order.total).toFixed(0)}</span>
+                <span className="text-sm font-bold text-black">Total: {formatCurrency(Number(order.total))}</span>
               </div>
             </div>
           );

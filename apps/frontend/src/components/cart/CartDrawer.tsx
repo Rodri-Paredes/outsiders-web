@@ -10,6 +10,7 @@ import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { useBranch, BRANCHES as BRANCH_OPTIONS } from '@/contexts/BranchContext';
 import { getWeservUrl } from '@/utils/weserv';
+import { formatCurrency } from '@/utils/format';
 
 // Remove local BRANCHES constant — read from context
 
@@ -146,7 +147,7 @@ export function CartDrawer() {
     
     let message = `¡Hola! 👋 Quiero realizar el siguiente pedido:\n\n`;
     message += `RESUMEN DEL PEDIDO:\n`;
-    message += `🛍 ${totalQuantity} producto(s) - Total: Bs. ${subtotal.toFixed(2)}\n`;
+    message += `🛍 ${totalQuantity} producto(s) - Total: ${formatCurrency(subtotal)}\n`;
     message += `📍 Ciudad de entrega: ${originCity}\n\n`;
     message += `🔗 Ver pedido completo con imágenes:\n`;
     message += `${baseUrl}/pedido/${orderCode}\n\n`;
@@ -283,7 +284,7 @@ export function CartDrawer() {
                           </div>
 
                           <span className="text-xs md:text-sm font-semibold text-black ml-auto">
-                            Bs. {(item.price * item.quantity).toFixed(2)}
+                            {formatCurrency(item.price * item.quantity)}
                           </span>
 
                           <button
@@ -306,7 +307,7 @@ export function CartDrawer() {
                     Subtotal:
                   </span>
                   <span className="text-2xl font-bold text-black">
-                    Bs. {subtotal.toFixed(2)}
+                    {formatCurrency(subtotal)}
                   </span>
                 </div>
               </div>

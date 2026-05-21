@@ -16,6 +16,7 @@ import { sizeGuideService, SizeGuide } from '@/services/sizeGuide.service';
 import { getWeservUrl } from '@/utils/weserv';
 import { useAuth } from '@/contexts/AuthContext';
 import { favoritesService } from '@/services/favorites.service';
+import { formatCurrency } from '@/utils/format';
 
 // Sizes are now loaded dynamically from product variants
 
@@ -391,15 +392,15 @@ export default function ProductPage() {
             {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
               <div className="flex items-center gap-3 mb-8">
                 <p className="text-lg text-gray-400 line-through">
-                  Bs. {Number(product.original_price).toFixed(2)}
+                  {formatCurrency(Number(product.original_price))}
                 </p>
                 <p className="text-2xl font-medium text-black">
-                  Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                  {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
                 </p>
               </div>
             ) : (
               <p className="text-2xl font-medium text-black mb-8">
-                Bs. {product.price?.toFixed(2) || '0.00'}
+                {formatCurrency(product.price || 0)}
               </p>
             )}
 

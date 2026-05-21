@@ -8,6 +8,7 @@ import { Product } from '@/lib/database.types';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { getWeservUrl } from '@/utils/weserv';
+import { formatCurrency } from '@/utils/format';
 
 export function NewArrivals() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -184,7 +185,7 @@ export function NewArrivals() {
                       </h3>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] md:text-[11px] font-bold text-black">
-                          ${Number(product.price).toFixed(2)}
+                          {formatCurrency(Number(product.price))}
                         </span>
                       </div>
                     </div>

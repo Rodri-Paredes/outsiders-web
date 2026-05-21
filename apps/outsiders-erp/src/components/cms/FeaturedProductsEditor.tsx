@@ -3,6 +3,7 @@ import { cmsService } from '@/services/cmsService'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { Loader2, Search, Trash2, ArrowUp, ArrowDown, Star } from 'lucide-react'
+import { formatCurrency } from '../../lib/utils'
 
 interface BestSellersConfig {
   title: string
@@ -209,7 +210,7 @@ export default function FeaturedProductsEditor() {
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-xs text-gray-500">Bs. {Number(product.price).toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">{formatCurrency(Number(product.price))}</p>
                   </div>
 
                   <button
@@ -260,7 +261,7 @@ export default function FeaturedProductsEditor() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
-                    <p className="text-xs text-gray-500">Bs. {Number(product.price).toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">{formatCurrency(Number(product.price))}</p>
                   </div>
                   <button
                     onClick={() => addProduct(product)}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
+import { formatCurrency } from '@/utils/format';
 
 interface Product {
   id: string;
@@ -132,8 +133,8 @@ export default function PedidoPage({ params }: { params: { codigo: string } }) {
                     <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:gap-y-2 text-xs sm:text-sm text-gray-600">
                       <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Talla</span><span className="font-semibold text-black">{item.size}</span></div>
                       <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Cantidad</span><span className="font-semibold text-black">{item.quantity}</span></div>
-                      <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Precio</span><span className="font-semibold text-black">Bs {Number(item.price).toFixed(2)}</span></div>
-                      <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Subtotal</span><span className="font-semibold text-black">Bs {(item.price * item.quantity).toFixed(2)}</span></div>
+                      <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Precio</span><span className="font-semibold text-black">{formatCurrency(Number(item.price))}</span></div>
+                      <div className="flex flex-col"><span className="text-[10px] sm:text-xs uppercase text-gray-400 font-medium">Subtotal</span><span className="font-semibold text-black">{formatCurrency(item.price * item.quantity)}</span></div>
                     </div>
                   </div>
                 </div>
@@ -168,7 +169,7 @@ export default function PedidoPage({ params }: { params: { codigo: string } }) {
 
             <div className="flex justify-between items-center border-t border-gray-200 pt-4 mb-6">
               <span className="text-sm font-semibold uppercase tracking-wider">Total Final</span>
-              <span className="text-2xl font-black text-black">Bs {Number(order.total).toFixed(2)}</span>
+              <span className="text-2xl font-black text-black">{formatCurrency(Number(order.total))}</span>
             </div>
 
             <Link href="/shop" className="flex items-center justify-center w-full py-3.5 bg-black text-white text-sm font-bold uppercase tracking-widest rounded hover:bg-gray-800 transition-colors">

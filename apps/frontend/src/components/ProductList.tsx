@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { useBranch } from '@/contexts/BranchContext';
 import { ProductImageCarousel } from './ProductImageCarousel';
+import { formatCurrency } from '@/utils/format';
 
 export default function ProductList() {
   const addItem = useCartStore((state) => state.addItem);
@@ -126,15 +127,15 @@ export default function ProductList() {
                   {discount ? (
                     <>
                       <span className="text-[11px] text-gray-400 line-through">
-                        Bs. {Number(product.original_price).toFixed(2)}
+                        {formatCurrency(Number(product.original_price))}
                       </span>
                       <span className="text-[11px] text-gray-800 font-medium tracking-wide">
-                        Bs. {finalPrice.toFixed(2)}
+                        {formatCurrency(finalPrice)}
                       </span>
                     </>
                   ) : (
                     <span className="text-[11px] text-gray-800 font-medium tracking-wide">
-                      Bs. {Number(product.price).toFixed(2)}
+                      {formatCurrency(Number(product.price))}
                     </span>
                   )}
                 </div>
@@ -196,15 +197,15 @@ export default function ProductList() {
               {hasDiscount(selectedProduct) ? (
                 <div className="flex items-center gap-3">
                   <p className="text-sm text-gray-400 line-through">
-                    Bs. {Number(selectedProduct.original_price).toFixed(2)}
+                    {formatCurrency(Number(selectedProduct.original_price))}
                   </p>
                   <p className="text-xl text-black font-bold">
-                    Bs. {getFinalPrice(selectedProduct).toFixed(2)}
+                    {formatCurrency(getFinalPrice(selectedProduct))}
                   </p>
                 </div>
               ) : (
                 <p className="text-xl text-black font-bold">
-                  Bs. {selectedProduct.price.toFixed(2)}
+                  {formatCurrency(selectedProduct.price)}
                 </p>
               )}
             </div>

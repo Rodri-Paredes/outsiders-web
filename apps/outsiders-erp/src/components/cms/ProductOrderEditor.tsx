@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import { Loader2, ArrowUp, ArrowDown, GripVertical, AlertCircle, RefreshCw, Save } from 'lucide-react'
+import { formatCurrency } from '../../lib/utils'
 
 interface OrderedProduct {
   id: string
@@ -271,7 +272,7 @@ export default function ProductOrderEditor() {
 
                 {/* Price */}
                 <span className="w-24 text-right text-sm text-gray-600 font-medium shrink-0">
-                  Bs. {Number(product.price).toFixed(0)}
+                  {formatCurrency(Number(product.price))}
                 </span>
 
                 {/* Up / Down buttons */}

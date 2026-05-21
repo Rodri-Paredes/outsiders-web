@@ -8,6 +8,7 @@ import Card from '../components/ui/Card';
 import Toast from '../components/ui/Toast';
 import { OpenCashModal } from '../components/cash/OpenCashModal';
 import { CloseCashModal } from '../components/cash/CloseCashModal';
+import { formatCurrency } from '../lib/utils';
 import { CashWithdrawalModal } from '../components/cash/CashWithdrawalModal';
 import { CashDepositModal } from '../components/cash/CashDepositModal';
 
@@ -119,7 +120,7 @@ export function CashPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Efectivo</p>
-              <p className="text-2xl font-bold">Bs {summary?.total_cash?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">{formatCurrency(summary?.total_cash || 0)}</p>
             </div>
           </div>
         </Card>
@@ -131,7 +132,7 @@ export function CashPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">QR</p>
-              <p className="text-2xl font-bold">Bs {summary?.total_qr?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">{formatCurrency(summary?.total_qr || 0)}</p>
             </div>
           </div>
         </Card>
@@ -143,7 +144,7 @@ export function CashPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Tarjeta</p>
-              <p className="text-2xl font-bold">Bs {summary?.total_card?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">{formatCurrency(summary?.total_card || 0)}</p>
             </div>
           </div>
         </Card>
@@ -155,7 +156,7 @@ export function CashPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Total</p>
-              <p className="text-2xl font-bold">Bs {summary?.total_sales?.toFixed(2) || '0.00'}</p>
+              <p className="text-2xl font-bold">{formatCurrency(summary?.total_sales || 0)}</p>
             </div>
           </div>
         </Card>
@@ -164,7 +165,7 @@ export function CashPage() {
       {/* Fondo inicial */}
       <Card className="p-6">
         <h3 className="font-semibold mb-2">Fondo Inicial</h3>
-        <p className="text-2xl font-bold">Bs {cashRegister.opening_amount.toFixed(2)}</p>
+        <p className="text-2xl font-bold">{formatCurrency(cashRegister.opening_amount)}</p>
         {cashRegister.opening_notes && (
           <p className="text-sm text-gray-600 mt-2">{cashRegister.opening_notes}</p>
         )}

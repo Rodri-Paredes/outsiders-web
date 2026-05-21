@@ -1,4 +1,5 @@
 import { CartItem } from '@/store/cartStore';
+import { formatCurrency } from '@/utils/format';
 
 const WHATSAPP_CBB = '59164884458';
 const WHATSAPP_SCZ = '59176978023';
@@ -9,11 +10,11 @@ export function generateWhatsAppMessage(items: CartItem[], total: number): strin
   const itemsList = items
     .map((item) => {
       const subtotal = item.price * item.quantity;
-      return `• ${item.name} (Talla ${item.size}) x${item.quantity} - Bs. ${subtotal.toFixed(2)}`;
+      return `• ${item.name} (Talla ${item.size}) x${item.quantity} - ${formatCurrency(subtotal)}`;
     })
     .join('\n');
   
-  const footer = `\n\n*Total: Bs. ${total.toFixed(2)}*\n\nGracias!`;
+  const footer = `\n\n*Total: ${formatCurrency(total)}*\n\nGracias!`;
   
   return header + itemsList + footer;
 }

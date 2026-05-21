@@ -21,13 +21,6 @@ export function ProductCard({
 }: ProductCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-BO', {
-      style: 'currency',
-      currency: 'BOB',
-    }).format(price);
-  };
-
   const images = product.images || (product.image_url ? [product.image_url] : []);
 
   // Discount calculations
@@ -143,14 +136,14 @@ export function ProductCard({
             {hasDiscount ? (
               <div className="flex flex-col items-end">
                 <span className="text-xs text-gray-400 line-through">
-                  {formatPrice(product.original_price!)}
+                  {formatCurrency(product.original_price!)}
                 </span>
                 <span className="font-bold text-lg text-green-700">
-                  {formatPrice(Math.round(finalPrice * 100) / 100)}
+                  {formatCurrency(Math.round(finalPrice * 100) / 100)}
                 </span>
               </div>
             ) : (
-              <span className="font-bold text-lg">{formatPrice(product.price)}</span>
+              <span className="font-bold text-lg">{formatCurrency(product.price)}</span>
             )}
           </div>
         </div>

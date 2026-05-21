@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { Search, Filter, X, Check } from 'lucide-react';
 import { useBranch } from '@/contexts/BranchContext';
 import { ProductImageCarousel } from '@/components/ProductImageCarousel';
+import { formatCurrency } from '@/utils/format';
 
 // Inner component handling the logic
 function ShopContent() {
@@ -560,15 +561,15 @@ function ShopContent() {
                             {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
                               <>
                                 <span className="text-[11px] text-gray-400 line-through">
-                                  Bs. {Number(product.original_price).toFixed(2)}
+                                  {formatCurrency(Number(product.original_price))}
                                 </span>
                                 <span className="text-[11px] text-gray-800 font-medium tracking-wide">
-                                  Bs. {(product.original_price * (1 - product.discount_percentage / 100)).toFixed(2)}
+                                  {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
                                 </span>
                               </>
                             ) : (
                               <span className="text-[11px] text-gray-800 font-medium tracking-wide">
-                                Bs. {Number(product.price).toFixed(2)}
+                                {formatCurrency(Number(product.price))}
                               </span>
                             )}
                           </div>

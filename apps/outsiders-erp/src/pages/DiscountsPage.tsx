@@ -7,6 +7,7 @@ import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
 import Toast from '../components/ui/Toast';
 import { DiscountForm } from '../components/discounts/DiscountForm';
+import { formatCurrency } from '../lib/utils';
 
 export function DiscountsPage() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -115,7 +116,7 @@ export function DiscountsPage() {
                   <div className="text-2xl font-bold text-green-600">
                     {discount.type === 'PERCENTAGE' 
                       ? `${discount.value}% OFF` 
-                      : `- Bs ${discount.value.toFixed(2)}`}
+                      : `- ${formatCurrency(discount.value)}`}
                   </div>
                 </div>
 

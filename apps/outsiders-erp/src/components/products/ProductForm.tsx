@@ -464,13 +464,6 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     gramaje: 'Gramaje',
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-BO', {
-      style: 'currency',
-      currency: 'BOB',
-    }).format(price);
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col">
@@ -649,14 +642,14 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-xs text-gray-500 line-through">{formatPrice(discountPreview.originalPrice)}</p>
-                            <p className="text-lg font-bold text-green-700">{formatPrice(discountPreview.finalPrice)}</p>
+                            <p className="text-xs text-gray-500 line-through">{formatCurrency(discountPreview.originalPrice)}</p>
+                            <p className="text-lg font-bold text-green-700">{formatCurrency(discountPreview.finalPrice)}</p>
                           </div>
                           <div className="text-right">
                             <span className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
                               -{discountPreview.percentage}%
                             </span>
-                            <p className="text-xs text-green-600 mt-1">Ahorras {formatPrice(discountPreview.savings)}</p>
+                            <p className="text-xs text-green-600 mt-1">Ahorras {formatCurrency(discountPreview.savings)}</p>
                           </div>
                         </div>
                       </div>
@@ -691,7 +684,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                         <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
                           <span className="text-amber-600 block">Utilidad por unidad</span>
                           <span className="font-bold text-amber-900">
-                            Bs. {(formData.price - formData.cost_price).toFixed(2)}
+                            {formatCurrency(formData.price - formData.cost_price)}
                           </span>
                         </div>
                         <div className="bg-white border border-amber-200 rounded px-2 py-1.5">

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cartStore';
 import { sendWhatsAppOrder } from '@/utils/whatsapp';
 import { getWeservUrl } from '@/utils/weserv';
+import { formatCurrency } from '@/utils/format';
 
 export default function CartView() {
   const items = useCartStore((state) => state.items);
@@ -79,7 +80,7 @@ export default function CartView() {
                   Talla: <span className="text-white">{item.size}</span>
                 </p>
                 <p className="text-sm text-gray-light font-light mt-1">
-                  Bs. {item.price.toFixed(2)} c/u
+                  {formatCurrency(item.price)} c/u
                 </p>
               </div>
 
@@ -118,7 +119,7 @@ export default function CartView() {
             {/* Subtotal */}
             <div className="text-right">
               <p className="text-lg font-light text-white">
-                Bs. {(item.price * item.quantity).toFixed(2)}
+                {formatCurrency(item.price * item.quantity)}
               </p>
             </div>
           </div>
@@ -133,7 +134,7 @@ export default function CartView() {
           <div className="space-y-4 mb-6">
             <div className="flex items-center justify-between text-sm">
               <span className="font-light text-gray-light">Subtotal</span>
-              <span className="text-white font-light">Bs. {total.toFixed(2)}</span>
+              <span className="text-white font-light">{formatCurrency(total)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="font-light text-gray-light">Envío</span>
@@ -142,7 +143,7 @@ export default function CartView() {
             <div className="h-px bg-white/10" />
             <div className="flex items-center justify-between">
               <span className="font-light text-white">Total</span>
-              <span className="text-2xl font-light text-white">Bs. {total.toFixed(2)}</span>
+              <span className="text-2xl font-light text-white">{formatCurrency(total)}</span>
             </div>
           </div>
 
