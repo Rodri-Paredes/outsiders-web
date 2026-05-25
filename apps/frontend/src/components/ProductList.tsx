@@ -44,9 +44,6 @@ export default function ProductList() {
 
   // Calculate final price considering discount
   const getFinalPrice = (product: Product): number => {
-    if (product.original_price && product.discount_percentage && product.discount_percentage > 0) {
-      return product.original_price * (1 - product.discount_percentage / 100);
-    }
     return product.price;
   };
 

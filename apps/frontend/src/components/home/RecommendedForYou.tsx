@@ -141,7 +141,7 @@ export function RecommendedForYou({ anonId, currentProductId, currentCategory, b
                           {formatCurrency(Number(product.original_price))}
                         </span>
                         <span className="text-[10px] font-bold text-black">
-                          {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
+                          {formatCurrency(Number(product.price))}
                         </span>
                       </div>
                     ) : (

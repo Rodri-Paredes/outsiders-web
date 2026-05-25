@@ -179,9 +179,7 @@ export default function ProductPage() {
 
     try {
       const images = (product as any).images || [product.image_url].filter(Boolean);
-      const finalPrice = product.original_price && product.discount_percentage && product.discount_percentage > 0
-        ? product.original_price * (1 - product.discount_percentage / 100)
-        : product.price;
+      const finalPrice = product.price;
       addItem({
         productId: product.id,
         name: product.name,
@@ -395,7 +393,7 @@ export default function ProductPage() {
                   {formatCurrency(Number(product.original_price))}
                 </p>
                 <p className="text-2xl font-medium text-black">
-                  {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
+                  {formatCurrency(Number(product.price))}
                 </p>
               </div>
             ) : (

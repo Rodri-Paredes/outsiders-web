@@ -564,7 +564,7 @@ function ShopContent() {
                                   {formatCurrency(Number(product.original_price))}
                                 </span>
                                 <span className="text-[11px] text-gray-800 font-medium tracking-wide">
-                                  {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
+                                  {formatCurrency(Number(product.price))}
                                 </span>
                               </>
                             ) : (

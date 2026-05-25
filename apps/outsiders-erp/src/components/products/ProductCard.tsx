@@ -25,9 +25,7 @@ export function ProductCard({
 
   // Discount calculations
   const hasDiscount = product.original_price && product.discount_percentage && product.discount_percentage > 0;
-  const finalPrice = hasDiscount
-    ? product.original_price! * (1 - product.discount_percentage! / 100)
-    : product.price;
+  const finalPrice = product.price;
 
   // Tags
   const productTags = product.tags?.map(t => t.tag).filter(Boolean) || [];
@@ -139,7 +137,7 @@ export function ProductCard({
                   {formatCurrency(product.original_price!)}
                 </span>
                 <span className="font-bold text-lg text-green-700">
-                  {formatCurrency(Math.round(finalPrice * 100) / 100)}
+                  {formatCurrency(product.price)}
                 </span>
               </div>
             ) : (

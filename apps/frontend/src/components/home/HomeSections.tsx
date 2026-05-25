@@ -193,7 +193,7 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.original_price))}</span>
                           <span className="text-xs font-bold text-black">
-                            {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
+                            {formatCurrency(Number(product.price))}
                           </span>
                         </div>
                       ) : (

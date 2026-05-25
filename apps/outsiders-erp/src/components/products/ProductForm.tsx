@@ -51,8 +51,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   // Local state for the discounted price input (instead of % field)
   const [discountedPriceInput, setDiscountedPriceInput] = useState<string>(() => {
     if (product?.original_price && product?.discount_percentage) {
-      const finalPrice = product.original_price * (1 - product.discount_percentage / 100);
-      return String(Math.round(finalPrice * 100) / 100);
+      // Use the stored price directly to avoid floating-point rounding errors
+      return String(product.price);
     }
     return '';
   });

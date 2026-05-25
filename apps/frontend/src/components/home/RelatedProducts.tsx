@@ -187,7 +187,7 @@ export function RelatedProducts({ currentProductId, category, branchId }: Props)
                             {formatCurrency(Number(product.original_price))}
                           </span>
                           <span className="text-[10px] md:text-[11px] font-bold text-black">
-                            {formatCurrency(product.original_price * (1 - product.discount_percentage / 100))}
+                            {formatCurrency(Number(product.price))}
                           </span>
                         </div>
                       ) : (
