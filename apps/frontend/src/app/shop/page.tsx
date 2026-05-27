@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { productsService } from '@/services/products.service';
 import { useCartStore } from '@/store/cartStore';
+import { supabase } from '@/lib/supabase';
 import { Product } from '@/lib/database.types';
 import toast from 'react-hot-toast';
 import { Search, Filter, X, Check } from 'lucide-react';
@@ -28,6 +29,7 @@ function ShopContent() {
   });
   const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('tag') ? [searchParams.get('tag') as string] : []);
   const [showOnlySale, setShowOnlySale] = useState(searchParams.get('sale') === 'true');
+  const [priceSpecialsOrder, setPriceSpecialsOrder] = useState<string[]>([]);
   
   const { selectedBranch } = useBranch();
   const [mounted, setMounted] = useState(false);
@@ -102,6 +104,22 @@ function ShopContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBranch, mounted]);
+
+  // Load price specials custom order from CMS
+  useEffect(() => {
+    if (mounted) {
+      supabase
+        .from('site_config')
+        .select('value')
+        .eq('key', 'price_specials_order')
+        .single()
+        .then(({ data }) => {
+          if (data?.value && Array.isArray(data.value)) {
+            setPriceSpecialsOrder(data.value as string[]);
+          }
+        });
+    }
+  }, [mounted]);
 
   const loadProducts = async () => {
     try {
@@ -228,6 +246,15 @@ function ShopContent() {
 
     return matchesSearch && matchesCategory && matchesTags && matchesSale;
   }).sort((a, b) => {
+    // When showing only sale products and a custom order is saved, use it
+    if (showOnlySale && priceSpecialsOrder.length > 0) {
+      const aIdx = priceSpecialsOrder.indexOf(a.id);
+      const bIdx = priceSpecialsOrder.indexOf(b.id);
+      const aOrder = aIdx === -1 ? Infinity : aIdx;
+      const bOrder = bIdx === -1 ? Infinity : bIdx;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+    }
+
     const showingMultipleCategories = selectedCategory === 'all' || (!!CATEGORY_GROUPS[selectedCategory] && !selectedSubCategory);
     // 1. When multiple categories are visible, group by category FIRST
     //    so all Hoodies appear before all Quarter Zip regardless of sort_order
