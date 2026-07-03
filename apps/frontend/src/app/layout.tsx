@@ -34,6 +34,27 @@ export const metadata: Metadata = {
     title: 'OUTSIDERS - Urban Streetwear',
     description: 'Ropa urbana para los que se atreven a ser diferentes.',
     type: 'website',
+    // Sin esto, Instagram/iOS no encuentran og:image y caen en su heurística
+    // de fallback: agarran la imagen más grande de la página (el wordmark
+    // "øutsiders" del Navbar, 7763x2268) y la recortan al centro en un
+    // cuadrado, mostrando solo un pedazo del texto ("sid") gigante y
+    // recortado. Esta es la imagen que se usa en cualquier página sin su
+    // propia metadata (home, /shop, etc.) — las páginas de producto ya
+    // declaran la suya propia en generateMetadata().
+    images: [
+      {
+        url: '/logos/logo-negro.png',
+        width: 1200,
+        height: 1200,
+        alt: 'OUTSIDERS',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OUTSIDERS - Urban Streetwear',
+    description: 'Ropa urbana para los que se atreven a ser diferentes.',
+    images: ['/logos/logo-negro.png'],
   },
 };
 
