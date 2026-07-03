@@ -123,6 +123,7 @@ export function ProductCard({
           {hasDiscount && (
             <span className="inline-flex items-center px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded shadow-sm">
               -{product.discount_percentage}%
+              {product.markdown_percentage && product.markdown_percentage > 0 ? ` / -${product.markdown_percentage}%` : ''}
             </span>
           )}
         </div>
@@ -140,6 +141,11 @@ export function ProductCard({
                 <span className="text-xs text-gray-400 line-through">
                   {formatCurrency(product.original_price!)}
                 </span>
+                {product.mid_price != null && (
+                  <span className="text-xs text-gray-400 line-through">
+                    {formatCurrency(product.mid_price)}
+                  </span>
+                )}
                 <span className="font-bold text-lg text-green-700">
                   {formatCurrency(product.price)}
                 </span>

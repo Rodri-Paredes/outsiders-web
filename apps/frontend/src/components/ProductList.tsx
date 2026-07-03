@@ -120,12 +120,17 @@ export default function ProductList() {
               {/* Price and Sizes (Bottom Row) */}
               <div className="flex justify-between items-center w-full mt-0.5">
                 {/* Left Side: Price */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {discount ? (
                     <>
                       <span className="text-[11px] text-gray-400 line-through">
                         {formatCurrency(Number(product.original_price))}
                       </span>
+                      {product.mid_price != null && (
+                        <span className="text-[11px] text-gray-400 line-through">
+                          {formatCurrency(Number(product.mid_price))}
+                        </span>
+                      )}
                       <span className="text-[11px] text-gray-800 font-medium tracking-wide">
                         {formatCurrency(finalPrice)}
                       </span>
@@ -192,10 +197,15 @@ export default function ProductList() {
             {/* Price with discount */}
             <div className="mb-6">
               {hasDiscount(selectedProduct) ? (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <p className="text-sm text-gray-400 line-through">
                     {formatCurrency(Number(selectedProduct.original_price))}
                   </p>
+                  {selectedProduct.mid_price != null && (
+                    <p className="text-sm text-gray-400 line-through">
+                      {formatCurrency(Number(selectedProduct.mid_price))}
+                    </p>
+                  )}
                   <p className="text-xl text-black font-bold">
                     {formatCurrency(getFinalPrice(selectedProduct))}
                   </p>

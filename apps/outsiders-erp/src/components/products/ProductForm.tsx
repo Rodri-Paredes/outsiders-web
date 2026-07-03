@@ -46,16 +46,27 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     base_price: product?.base_price ?? product?.price ?? 0,
     cost_price: product?.cost_price || null as number | null,
     discount_percentage: product?.discount_percentage || null as number | null,
+    markdown_percentage: product?.markdown_percentage || null as number | null,
     sku: (product as any)?.sku || '',
     is_new_in: product?.is_new_in ?? false,
     web_only: product?.web_only ?? false,
     visible_on_web: product?.visible_on_web ?? true,
   });
 
-  // Local state for the discounted price input (instead of % field)
+  // Local state for the discounted price input (instead of % field).
+  // Si ya hay un segundo descuento (markdown) activo, el precio del primer
+  // nivel es mid_price, no price (que en ese caso ya es el precio final).
   const [discountedPriceInput, setDiscountedPriceInput] = useState<string>(() => {
-    if (product?.discount_percentage && product?.price != null) {
-      // Use the stored (generated) price directly to avoid floating-point rounding errors
+    if (product?.discount_percentage) {
+      const tier1Price = product?.markdown_percentage ? product?.mid_price : product?.price;
+      if (tier1Price != null) return String(tier1Price);
+    }
+    return '';
+  });
+
+  // Local state for el precio final tras el segundo descuento (markdown).
+  const [markdownPriceInput, setMarkdownPriceInput] = useState<string>(() => {
+    if (product?.markdown_percentage && product?.price != null) {
       return String(product.price);
     }
     return '';
@@ -64,6 +75,9 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   // Controla si se muestra el editor de descuento (precio base + precio con
   // descuento) en vez del campo único "Precio de venta".
   const [discountMode, setDiscountMode] = useState<boolean>(!!product?.discount_percentage);
+
+  // Controla si se muestra el editor del segundo descuento (encima del primero).
+  const [markdownMode, setMarkdownMode] = useState<boolean>(!!product?.markdown_percentage);
 
   const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -99,21 +113,44 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     return (SIZES_BY_CATEGORY[formData.category] || SIZES) as unknown as string[];
   }, [formData.category]);
 
-  // Computed: discount preview. Aplica la misma fórmula de redondeo que la
-  // columna generada en la DB (ROUND(base_price * (1 - pct/100), 2)) para que
-  // lo que se ve en el formulario sea exactamente lo que se va a guardar.
-  const discountPreview = useMemo(() => {
+  // Precio tras el primer descuento (tier 1) — es la base sobre la que se
+  // calcula/compone el segundo descuento, si existe.
+  const tier1Price = useMemo(() => {
     if (formData.base_price && formData.discount_percentage && formData.discount_percentage > 0) {
-      const finalPrice = Math.round(formData.base_price * (1 - formData.discount_percentage / 100) * 100) / 100;
-      return {
-        originalPrice: formData.base_price,
-        finalPrice: Math.round(finalPrice),
-        percentage: Math.round(formData.discount_percentage),
-        savings: Math.round(formData.base_price - finalPrice),
-      };
+      return Math.round(formData.base_price * (1 - formData.discount_percentage / 100) * 100) / 100;
     }
     return null;
   }, [formData.base_price, formData.discount_percentage]);
+
+  // Computed: discount preview. Aplica la misma fórmula de redondeo que las
+  // columnas generadas en la DB para que lo que se ve en el formulario sea
+  // exactamente lo que se va a guardar. Si hay markdown_percentage activo,
+  // el segundo descuento se compone sobre tier1Price (ya redondeado), no
+  // sobre base_price directo.
+  const discountPreview = useMemo(() => {
+    if (tier1Price == null || !formData.discount_percentage) return null;
+
+    if (formData.markdown_percentage && formData.markdown_percentage > 0) {
+      const tier2Price = Math.round(tier1Price * (1 - formData.markdown_percentage / 100) * 100) / 100;
+      return {
+        originalPrice: formData.base_price,
+        midPrice: tier1Price,
+        finalPrice: Math.round(tier2Price),
+        percentage: Math.round(formData.discount_percentage),
+        markdownPercentage: Math.round(formData.markdown_percentage),
+        savings: Math.round(formData.base_price - tier2Price),
+      };
+    }
+
+    return {
+      originalPrice: formData.base_price,
+      midPrice: null as number | null,
+      finalPrice: Math.round(tier1Price),
+      percentage: Math.round(formData.discount_percentage),
+      markdownPercentage: null as number | null,
+      savings: Math.round(formData.base_price - tier1Price),
+    };
+  }, [formData.base_price, formData.discount_percentage, formData.markdown_percentage, tier1Price]);
 
   // When discountedPriceInput or base_price changes → recalculate discount_percentage.
   // base_price en sí NUNCA se toca acá: el descuento se calcula siempre sobre
@@ -130,6 +167,21 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [discountedPriceInput, formData.base_price]);
+
+  // When markdownPriceInput o tier1Price cambian → recalcular markdown_percentage.
+  // Igual que con el primer descuento: nunca se toca tier1Price/base_price acá,
+  // solo se deriva el % del segundo descuento.
+  useEffect(() => {
+    if (tier1Price == null) return; // sin primer descuento no puede haber segundo
+    const finalPrice = parseFloat(markdownPriceInput);
+    if (!isNaN(finalPrice) && finalPrice > 0 && finalPrice < tier1Price) {
+      const pct = Math.round(((tier1Price - finalPrice) / tier1Price) * 10000) / 100;
+      setFormData(prev => ({ ...prev, markdown_percentage: pct }));
+    } else if (!isNaN(finalPrice) && finalPrice > 0) {
+      setFormData(prev => ({ ...prev, markdown_percentage: null }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markdownPriceInput, tier1Price]);
 
   // Load tags when category changes
   useEffect(() => {
@@ -288,14 +340,25 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   };
 
   const clearDiscount = () => {
-    // Solo se limpia discount_percentage. base_price NUNCA se toca acá — por
-    // eso el precio vuelve solo a su valor original al quitar el descuento.
+    // Limpia AMBOS niveles. base_price NUNCA se toca acá — por eso el precio
+    // vuelve solo a su valor original al quitar el/los descuento(s).
     setFormData(prev => ({
       ...prev,
       discount_percentage: null,
+      markdown_percentage: null,
     }));
     setDiscountedPriceInput('');
+    setMarkdownPriceInput('');
     setDiscountMode(false);
+    setMarkdownMode(false);
+  };
+
+  const clearMarkdown = () => {
+    // Solo limpia el segundo descuento — el primero queda intacto, igual que
+    // clearDiscount nunca toca base_price.
+    setFormData(prev => ({ ...prev, markdown_percentage: null }));
+    setMarkdownPriceInput('');
+    setMarkdownMode(false);
   };
 
   const validate = () => {
@@ -319,6 +382,10 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
 
     if (discountMode && (!discountedPriceInput || parseFloat(discountedPriceInput) <= 0)) {
       newErrors.discounted_price = 'Ingresa el precio con descuento';
+    }
+
+    if (markdownMode && (!markdownPriceInput || parseFloat(markdownPriceInput) <= 0)) {
+      newErrors.markdown_price = 'Ingresa el precio final con el segundo descuento';
     }
 
     setErrors(newErrors);
@@ -368,6 +435,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         web_only: formData.web_only,
         visible_on_web: formData.visible_on_web,
         discount_percentage: formData.discount_percentage || null,
+        markdown_percentage: formData.markdown_percentage || null,
         size_guide_id: selectedSizeGuideId || null,
         // Solo admins pueden guardar/modificar el precio de costo
         cost_price: isAdmin ? (formData.cost_price || null) : undefined,
@@ -654,19 +722,69 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                       </div>
                     </div>
 
+                    {/* Segundo descuento (encima del primero) */}
+                    {discountPreview && !markdownMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMarkdownMode(true);
+                          setMarkdownPriceInput('');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      >
+                        <Percent size={14} />
+                        Agregar otro descuento
+                      </button>
+                    )}
+
+                    {markdownMode && (
+                      <div className="grid grid-cols-2 gap-3 items-end">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Precio final, con el 2do descuento (Bs.)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={markdownPriceInput}
+                            onChange={(e) => setMarkdownPriceInput(e.target.value)}
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.markdown_price ? 'border-red-500' : 'border-gray-300'}`}
+                            placeholder="90.00"
+                          />
+                          {errors.markdown_price && <p className="text-xs text-red-500 mt-1">{errors.markdown_price}</p>}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearMarkdown}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium pb-2"
+                        >
+                          Quitar último descuento
+                        </button>
+                      </div>
+                    )}
+
                     {/* Discount Preview */}
                     {discountPreview && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-xs text-gray-500 line-through">{formatCurrency(discountPreview.originalPrice)}</p>
+                            {discountPreview.midPrice != null && (
+                              <p className="text-xs text-gray-400 line-through">{formatCurrency(discountPreview.midPrice)}</p>
+                            )}
                             <p className="text-lg font-bold text-green-700">{formatCurrency(discountPreview.finalPrice)}</p>
                           </div>
-                          <div className="text-right">
-                            <span className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
-                              -{discountPreview.percentage}%
-                            </span>
-                            <p className="text-xs text-green-600 mt-1">Ahorras {formatCurrency(discountPreview.savings)}</p>
+                          <div className="text-right space-y-1">
+                            <div>
+                              <span className="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-bold rounded">
+                                -{discountPreview.percentage}%
+                              </span>
+                              {discountPreview.markdownPercentage != null && (
+                                <span className="ml-1 inline-flex items-center px-2 py-1 bg-emerald-700 text-white text-xs font-bold rounded">
+                                  -{discountPreview.markdownPercentage}%
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-green-600">Ahorras {formatCurrency(discountPreview.savings)}</p>
                           </div>
                         </div>
                       </div>

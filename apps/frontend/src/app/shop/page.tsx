@@ -584,12 +584,17 @@ function ShopContent() {
                         {/* Price and Sizes (Bottom Row) */}
                         <div className="flex justify-between items-center w-full mt-0.5">
                           {/* Left Side: Price */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
                               <>
                                 <span className="text-[11px] text-gray-400 line-through">
                                   {formatCurrency(Number(product.original_price))}
                                 </span>
+                                {product.mid_price != null && (
+                                  <span className="text-[11px] text-gray-400 line-through">
+                                    {formatCurrency(Number(product.mid_price))}
+                                  </span>
+                                )}
                                 <span className="text-[11px] text-gray-800 font-medium tracking-wide">
                                   {formatCurrency(Number(product.price))}
                                 </span>

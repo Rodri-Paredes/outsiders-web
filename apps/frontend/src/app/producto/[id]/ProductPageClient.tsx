@@ -368,10 +368,15 @@ export default function ProductPageClient({ slug }: { slug: string }) {
 
             {/* Price */}
             {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
-              <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-center gap-3 mb-8 flex-wrap">
                 <p className="text-lg text-gray-400 line-through">
                   {formatCurrency(Number(product.original_price))}
                 </p>
+                {product.mid_price != null && (
+                  <p className="text-lg text-gray-400 line-through">
+                    {formatCurrency(Number(product.mid_price))}
+                  </p>
+                )}
                 <p className="text-2xl font-medium text-black">
                   {formatCurrency(Number(product.price))}
                 </p>

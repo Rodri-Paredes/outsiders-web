@@ -7,6 +7,8 @@ export interface Product {
   price: number
   original_price?: number | null
   discount_percentage?: number | null
+  mid_price?: number | null
+  markdown_percentage?: number | null
   stock: number
   image_url?: string
   images?: string[]

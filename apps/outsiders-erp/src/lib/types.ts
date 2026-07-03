@@ -22,10 +22,12 @@ export interface Product {
   description: string | null
   category: string
   base_price: number // Única fuente de verdad del precio; nunca la toca la lógica de descuento
-  price: number // Generada en DB: base_price con descuento aplicado, o igual a base_price si no hay descuento
+  price: number // Generada en DB: base_price con descuento(s) aplicado(s), o igual a base_price si no hay descuento
   cost_price: number | null // Solo visible para administradores
-  original_price: number | null // Generada en DB: base_price cuando hay descuento activo, si no null
-  discount_percentage: number | null
+  original_price: number | null // Generada en DB: base_price cuando hay algún descuento activo, si no null
+  discount_percentage: number | null // Primer descuento, calculado sobre base_price
+  mid_price: number | null // Generada en DB: precio tras el primer descuento; solo no-null si hay markdown_percentage activo
+  markdown_percentage: number | null // Segundo descuento, calculado sobre el precio ya rebajado por discount_percentage
   image_url: string | null // Legacy - mantener para compatibilidad
   images: string[] | null // Nuevo campo para múltiples imágenes
   drop_id: string | null
@@ -163,6 +165,7 @@ export interface ProductFormData {
   base_price: number
   cost_price?: number | null // Solo accesible para admins
   discount_percentage?: number | null
+  markdown_percentage?: number | null
   image_url?: string
   drop_id?: string
   is_visible: boolean

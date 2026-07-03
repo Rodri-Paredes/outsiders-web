@@ -195,8 +195,11 @@ export function BestSellers({ config }: Props) {
                         {product.name.toLowerCase()}
                       </h3>
                       {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.original_price))}</span>
+                          {product.mid_price != null && (
+                            <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.mid_price))}</span>
+                          )}
                           <span className="text-[10px] md:text-[11px] font-bold text-black">
                             {formatCurrency(Number(product.price))}
                           </span>

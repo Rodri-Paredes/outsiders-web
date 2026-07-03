@@ -178,6 +178,7 @@ export const productService = {
     category: string;
     base_price: number;
     discount_percentage?: number | null;
+    markdown_percentage?: number | null;
     image_url?: string;
     images?: string[];
     drop_id?: string;
@@ -206,6 +207,9 @@ export const productService = {
       // Only include discount_percentage if it has a value
       if (product.discount_percentage != null && product.discount_percentage > 0) {
         insertData.discount_percentage = product.discount_percentage;
+      }
+      if (product.markdown_percentage != null && product.markdown_percentage > 0) {
+        insertData.markdown_percentage = product.markdown_percentage;
       }
 
       const { data, error } = await supabase
@@ -241,10 +245,12 @@ export const productService = {
       // Remove fields that don't exist as columns
       delete cleanUpdates.id;
       delete cleanUpdates.created_at;
-      // `price` y `original_price` son columnas generadas por Postgres a partir
-      // de base_price + discount_percentage: escribirlas directamente falla.
+      // `price`, `original_price` y `mid_price` son columnas generadas por
+      // Postgres a partir de base_price + discount_percentage +
+      // markdown_percentage: escribirlas directamente falla.
       delete cleanUpdates.price;
       delete cleanUpdates.original_price;
+      delete cleanUpdates.mid_price;
 
       const { data, error } = await supabase
         .from('products')

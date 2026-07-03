@@ -191,8 +191,11 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
                         {product.name}
                       </h3>
                       {product.original_price && product.discount_percentage && product.discount_percentage > 0 ? (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.original_price))}</span>
+                          {product.mid_price != null && (
+                            <span className="text-[10px] text-gray-400 line-through">{formatCurrency(Number(product.mid_price))}</span>
+                          )}
                           <span className="text-xs font-bold text-black">
                             {formatCurrency(Number(product.price))}
                           </span>
