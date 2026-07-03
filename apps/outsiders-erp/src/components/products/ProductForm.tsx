@@ -115,9 +115,15 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
 
   // Precio tras el primer descuento (tier 1) — es la base sobre la que se
   // calcula/compone el segundo descuento, si existe.
+  // Redondeado a boliviano entero (sin centavos): la tienda no maneja
+  // centavos, y un % de descuento "prolijo" (16.67% de un 240 pensado para
+  // dar 200 exacto) casi nunca da un resultado exacto en centavos si se
+  // redondea a 2 decimales (240 * 0.8333 = 199.992 → 199.99 en vez de 200).
+  // Redondeando al entero se absorbe ese error de precisión y el precio
+  // final queda limpio.
   const tier1Price = useMemo(() => {
     if (formData.base_price && formData.discount_percentage && formData.discount_percentage > 0) {
-      return Math.round(formData.base_price * (1 - formData.discount_percentage / 100) * 100) / 100;
+      return Math.round(formData.base_price * (1 - formData.discount_percentage / 100));
     }
     return null;
   }, [formData.base_price, formData.discount_percentage]);
@@ -131,7 +137,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     if (tier1Price == null || !formData.discount_percentage) return null;
 
     if (formData.markdown_percentage && formData.markdown_percentage > 0) {
-      const tier2Price = Math.round(tier1Price * (1 - formData.markdown_percentage / 100) * 100) / 100;
+      const tier2Price = Math.round(tier1Price * (1 - formData.markdown_percentage / 100));
       return {
         originalPrice: formData.base_price,
         midPrice: tier1Price,
