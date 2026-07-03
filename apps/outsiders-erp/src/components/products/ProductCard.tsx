@@ -25,7 +25,6 @@ export function ProductCard({
 
   // Discount calculations
   const hasDiscount = product.original_price && product.discount_percentage && product.discount_percentage > 0;
-  const finalPrice = product.price;
 
   // Tags
   const productTags = product.tags?.map(t => t.tag).filter(Boolean) || [];
@@ -114,6 +113,11 @@ export function ProductCard({
           {product.web_only && (
             <span className="inline-flex items-center px-2 py-0.5 bg-blue-600 text-white text-xs font-bold rounded shadow-sm tracking-wider">
               SOLO WEB
+            </span>
+          )}
+          {!product.visible_on_web && (
+            <span className="inline-flex items-center px-2 py-0.5 bg-orange-600 text-white text-xs font-bold rounded shadow-sm tracking-wider">
+              SOLO ERP
             </span>
           )}
           {hasDiscount && (

@@ -35,27 +35,35 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const { activeBranch } = useAuthStore();
   const { isAdmin } = useAuth();
   
+  // `base_price` es la única fuente de verdad del precio: nunca se sobrescribe
+  // con el precio descontado. `price`/`original_price` los calcula la DB
+  // (columnas generadas) a partir de base_price + discount_percentage, por eso
+  // no forman parte de este formulario.
   const [formData, setFormData] = useState({
     name: product?.name || '',
     description: product?.description || '',
     category: product?.category || '',
-    price: product?.price || 0,
+    base_price: product?.base_price ?? product?.price ?? 0,
     cost_price: product?.cost_price || null as number | null,
-    original_price: product?.original_price || null as number | null,
     discount_percentage: product?.discount_percentage || null as number | null,
     sku: (product as any)?.sku || '',
     is_new_in: product?.is_new_in ?? false,
     web_only: product?.web_only ?? false,
+    visible_on_web: product?.visible_on_web ?? true,
   });
 
   // Local state for the discounted price input (instead of % field)
   const [discountedPriceInput, setDiscountedPriceInput] = useState<string>(() => {
-    if (product?.original_price && product?.discount_percentage) {
-      // Use the stored price directly to avoid floating-point rounding errors
+    if (product?.discount_percentage && product?.price != null) {
+      // Use the stored (generated) price directly to avoid floating-point rounding errors
       return String(product.price);
     }
     return '';
   });
+
+  // Controla si se muestra el editor de descuento (precio base + precio con
+  // descuento) en vez del campo único "Precio de venta".
+  const [discountMode, setDiscountMode] = useState<boolean>(!!product?.discount_percentage);
 
   const [images, setImages] = useState<string[]>(product?.images || (product?.image_url ? [product.image_url] : []));
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -91,33 +99,37 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     return (SIZES_BY_CATEGORY[formData.category] || SIZES) as unknown as string[];
   }, [formData.category]);
 
-  // Computed: discount preview — uses formData.price (exact user input) to avoid floating point drift
+  // Computed: discount preview. Aplica la misma fórmula de redondeo que la
+  // columna generada en la DB (ROUND(base_price * (1 - pct/100), 2)) para que
+  // lo que se ve en el formulario sea exactamente lo que se va a guardar.
   const discountPreview = useMemo(() => {
-    if (formData.original_price && formData.discount_percentage && formData.discount_percentage > 0 && formData.price) {
-      const finalPrice = formData.price;
+    if (formData.base_price && formData.discount_percentage && formData.discount_percentage > 0) {
+      const finalPrice = Math.round(formData.base_price * (1 - formData.discount_percentage / 100) * 100) / 100;
       return {
-        originalPrice: formData.original_price,
+        originalPrice: formData.base_price,
         finalPrice: Math.round(finalPrice),
         percentage: Math.round(formData.discount_percentage),
-        savings: Math.round(formData.original_price - finalPrice),
+        savings: Math.round(formData.base_price - finalPrice),
       };
     }
     return null;
-  }, [formData.original_price, formData.discount_percentage, formData.price]);
+  }, [formData.base_price, formData.discount_percentage]);
 
-  // When discountedPriceInput or original_price changes → recalculate discount_percentage and price
+  // When discountedPriceInput or base_price changes → recalculate discount_percentage.
+  // base_price en sí NUNCA se toca acá: el descuento se calcula siempre sobre
+  // el precio base, y quitarlo (discount_percentage = null) lo restaura solo.
   useEffect(() => {
-    const originalPrice = formData.original_price;
+    const basePrice = formData.base_price;
     const discountedPrice = parseFloat(discountedPriceInput);
-    if (originalPrice && originalPrice > 0 && !isNaN(discountedPrice) && discountedPrice > 0 && discountedPrice < originalPrice) {
-      const pct = Math.round(((originalPrice - discountedPrice) / originalPrice) * 10000) / 100;
-      setFormData(prev => ({ ...prev, discount_percentage: pct, price: discountedPrice }));
+    if (basePrice && basePrice > 0 && !isNaN(discountedPrice) && discountedPrice > 0 && discountedPrice < basePrice) {
+      const pct = Math.round(((basePrice - discountedPrice) / basePrice) * 10000) / 100;
+      setFormData(prev => ({ ...prev, discount_percentage: pct }));
     } else if (!isNaN(discountedPrice) && discountedPrice > 0) {
-      // discountedPrice >= originalPrice: no discount
+      // discountedPrice >= basePrice: no discount
       setFormData(prev => ({ ...prev, discount_percentage: null }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discountedPriceInput, formData.original_price]);
+  }, [discountedPriceInput, formData.base_price]);
 
   // Load tags when category changes
   useEffect(() => {
@@ -193,7 +205,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'price' || name === 'original_price' || name === 'discount_percentage' || name === 'cost_price'
+      [name]: name === 'base_price' || name === 'discount_percentage' || name === 'cost_price'
         ? (value === '' ? null : parseFloat(value) || 0)
         : value,
     }));
@@ -276,12 +288,14 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   };
 
   const clearDiscount = () => {
+    // Solo se limpia discount_percentage. base_price NUNCA se toca acá — por
+    // eso el precio vuelve solo a su valor original al quitar el descuento.
     setFormData(prev => ({
       ...prev,
-      original_price: null,
       discount_percentage: null,
     }));
     setDiscountedPriceInput('');
+    setDiscountMode(false);
   };
 
   const validate = () => {
@@ -295,7 +309,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       newErrors.category = 'La categoría es requerida';
     }
 
-    if (formData.price <= 0 && !discountPreview) {
+    if (formData.base_price <= 0) {
       newErrors.price = 'El precio debe ser mayor a 0';
     }
 
@@ -303,12 +317,8 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       newErrors.sizes = 'Agrega al menos una talla';
     }
 
-    if (formData.original_price && formData.original_price > 0 && (!discountedPriceInput || parseFloat(discountedPriceInput) <= 0)) {
+    if (discountMode && (!discountedPriceInput || parseFloat(discountedPriceInput) <= 0)) {
       newErrors.discounted_price = 'Ingresa el precio con descuento';
-    }
-
-    if (formData.discount_percentage && formData.discount_percentage > 0 && (!formData.original_price || formData.original_price <= 0)) {
-      newErrors.original_price = 'Ingresa el precio original';
     }
 
     setErrors(newErrors);
@@ -356,7 +366,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         is_visible: true,
         is_new_in: formData.is_new_in,
         web_only: formData.web_only,
-        original_price: formData.original_price || null,
+        visible_on_web: formData.visible_on_web,
         discount_percentage: formData.discount_percentage || null,
         size_guide_id: selectedSizeGuideId || null,
         // Solo admins pueden guardar/modificar el precio de costo
@@ -560,6 +570,26 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 </span>
               </label>
 
+              {/* VISIBLE ON WEB toggle */}
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setFormData(prev => ({ ...prev, visible_on_web: !prev.visible_on_web }))}
+                  className={`relative w-10 h-6 rounded-full transition-colors ${formData.visible_on_web ? 'bg-black' : 'bg-orange-500'}`}
+                >
+                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.visible_on_web ? 'left-5' : 'left-1'}`} />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  <span className={formData.visible_on_web ? 'font-bold text-black' : 'font-bold text-orange-700'}>
+                    {formData.visible_on_web ? 'Visible en la tienda web' : 'Solo venta en ERP / POS'}
+                  </span>
+                  <span className="ml-2 text-xs text-gray-400">
+                    {formData.visible_on_web
+                      ? '(aparece en catálogo, búsqueda y tiene URL pública)'
+                      : '(no aparece en la web ni en búsquedas; se sigue vendiendo desde el ERP)'}
+                  </span>
+                </span>
+              </label>
+
               {/* ===== SECCIÓN DE PRECIOS Y DESCUENTOS ===== */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -567,7 +597,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                     <Percent size={16} />
                     Precio y Descuento
                   </h4>
-                  {(formData.original_price || formData.discount_percentage) && (
+                  {discountMode && (
                     <button
                       type="button"
                       onClick={clearDiscount}
@@ -578,50 +608,37 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   )}
                 </div>
 
-                {/* Precio base (sin descuento) */}
-                {!formData.original_price && !formData.discount_percentage ? (
-                  <>
-                    <Input
-                      label="Precio de venta (Bs.)"
-                      name="price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.price || ''}
-                      onChange={handleInputChange}
-                      error={errors.price}
-                      placeholder="Monto en bolivianos"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, original_price: prev.price || 0 }));
-                        setDiscountedPriceInput('');
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                    >
-                      <Percent size={14} />
-                      Agregar descuento
-                    </button>
-                  </>
+                {/* Precio base (sin descuento). base_price es la única fuente
+                    de verdad: el input de descuento de abajo lo referencia
+                    pero nunca lo modifica directamente. */}
+                <Input
+                  label="Precio de venta (Bs.)"
+                  name="base_price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.base_price || ''}
+                  onChange={handleInputChange}
+                  error={errors.price}
+                  placeholder="Monto en bolivianos"
+                  required
+                />
+
+                {!discountMode ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDiscountMode(true);
+                      setDiscountedPriceInput('');
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Percent size={14} />
+                    Agregar descuento
+                  </button>
                 ) : (
                   <>
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Precio original (Bs.)</label>
-                        <input
-                          type="number"
-                          name="original_price"
-                          step="0.01"
-                          min="0"
-                          value={formData.original_price ?? ''}
-                          onChange={handleInputChange}
-                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black text-sm ${errors.original_price ? 'border-red-500' : 'border-gray-300'}`}
-                          placeholder="150.00"
-                        />
-                        {errors.original_price && <p className="text-xs text-red-500 mt-1">{errors.original_price}</p>}
-                      </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Precio con descuento (Bs.)</label>
                         <input
@@ -679,22 +696,27 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                       className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm bg-white"
                       placeholder="0.00"
                     />
-                    {formData.cost_price != null && formData.cost_price > 0 && formData.price > 0 && (
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
-                          <span className="text-amber-600 block">Utilidad por unidad</span>
-                          <span className="font-bold text-amber-900">
-                            {formatCurrency(formData.price - formData.cost_price)}
-                          </span>
+                    {formData.cost_price != null && formData.cost_price > 0 && (() => {
+                      // Margen calculado sobre el precio de venta real (con descuento aplicado, si corresponde)
+                      const sellingPrice = discountPreview ? discountPreview.finalPrice : formData.base_price;
+                      if (!(sellingPrice > 0)) return null;
+                      return (
+                        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                          <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
+                            <span className="text-amber-600 block">Utilidad por unidad</span>
+                            <span className="font-bold text-amber-900">
+                              {formatCurrency(sellingPrice - formData.cost_price!)}
+                            </span>
+                          </div>
+                          <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
+                            <span className="text-amber-600 block">Margen</span>
+                            <span className="font-bold text-amber-900">
+                              {(((sellingPrice - formData.cost_price!) / sellingPrice) * 100).toFixed(1)}%
+                            </span>
+                          </div>
                         </div>
-                        <div className="bg-white border border-amber-200 rounded px-2 py-1.5">
-                          <span className="text-amber-600 block">Margen</span>
-                          <span className="font-bold text-amber-900">
-                            {(((formData.price - formData.cost_price) / formData.price) * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
               )}

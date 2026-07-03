@@ -59,7 +59,8 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
               .from('products')
               .select('*, variants:product_variants(*, stock(*))')
               .in('id', ids)
-              .eq('is_visible', true);
+              .eq('is_visible', true)
+              .eq('visible_on_web', true);
             setProducts((data || []).map(mapProduct));
           }
         }
@@ -69,8 +70,8 @@ function SectionBlock({ section, idx }: { section: HomeSection; idx: number }) {
           .from('products')
           .select('*, variants:product_variants(*, stock(*))')
           .in('id', section.product_ids)
-          .eq('is_visible', true);
-
+          .eq('is_visible', true)
+          .eq('visible_on_web', true);
         if (data) {
           const ordered = section.product_ids
             .map(id => data.find(p => p.id === id))

@@ -21,14 +21,16 @@ export interface Product {
   name: string
   description: string | null
   category: string
-  price: number
+  base_price: number // Única fuente de verdad del precio; nunca la toca la lógica de descuento
+  price: number // Generada en DB: base_price con descuento aplicado, o igual a base_price si no hay descuento
   cost_price: number | null // Solo visible para administradores
-  original_price: number | null
+  original_price: number | null // Generada en DB: base_price cuando hay descuento activo, si no null
   discount_percentage: number | null
   image_url: string | null // Legacy - mantener para compatibilidad
   images: string[] | null // Nuevo campo para múltiples imágenes
   drop_id: string | null
   is_visible: boolean
+  visible_on_web: boolean
   is_new_in: boolean
   web_only: boolean
   sort_order: number
@@ -158,13 +160,13 @@ export interface ProductFormData {
   name: string
   description?: string
   category: string
-  price: number
+  base_price: number
   cost_price?: number | null // Solo accesible para admins
-  original_price?: number | null
   discount_percentage?: number | null
   image_url?: string
   drop_id?: string
   is_visible: boolean
+  visible_on_web?: boolean
   web_only?: boolean
   sizes: string[]
   tag_ids?: string[]

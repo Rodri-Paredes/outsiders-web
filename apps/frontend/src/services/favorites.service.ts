@@ -16,7 +16,8 @@ export const favoritesService = {
           discount_percentage,
           image_url,
           category,
-          is_visible
+          is_visible,
+          visible_on_web
         )
       `)
       .eq('user_id', userId)

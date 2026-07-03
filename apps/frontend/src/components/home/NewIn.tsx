@@ -49,8 +49,8 @@ export function NewIn({ config }: Props) {
             )
           `)
           .in('id', ids)
-          .eq('is_visible', true);
-
+          .eq('is_visible', true)
+          .eq('visible_on_web', true);
         if (data && data.length > 0) {
           const mapped = ids
             .map(id => data.find((p: any) => p.id === id))
@@ -93,6 +93,7 @@ export function NewIn({ config }: Props) {
           )
         `)
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .order('created_at', { ascending: false })
         .limit(5);
 

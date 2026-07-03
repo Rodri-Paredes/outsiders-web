@@ -120,6 +120,7 @@ export const recommendationsService = {
       `)
       .eq('category', category)
       .eq('is_visible', true)
+      .eq('visible_on_web', true)
       .neq('id', excludeProductId)
       .order('created_at', { ascending: false })
       .limit(limit + 5); // Pedimos un poco más para filtrar sin stock

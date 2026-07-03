@@ -51,8 +51,8 @@ export function BestSellers({ config }: Props) {
             )
           `)
           .in('id', ids)
-          .eq('is_visible', true);
-
+          .eq('is_visible', true)
+          .eq('visible_on_web', true);
         if (data && data.length > 0) {
           // Maintain CMS order & compute stock filtered by the selected branch
           const mapped = ids

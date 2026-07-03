@@ -71,6 +71,7 @@ export default function ProductOrderEditor() {
       .from('products')
       .select('category, original_price, discount_percentage')
       .eq('is_visible', true)
+      .eq('visible_on_web', true)
 
     if (!error && data) {
       const counts: Record<string, number> = {}
@@ -94,6 +95,7 @@ export default function ProductOrderEditor() {
         .select('id, name, image_url, images, price, sort_order')
         .eq('category', category)
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
@@ -116,6 +118,7 @@ export default function ProductOrderEditor() {
         .from('products')
         .select('id, name, image_url, images, price, sort_order, original_price, discount_percentage, category')
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .not('original_price', 'is', null)
         .gt('discount_percentage', 0)
         .order('created_at', { ascending: false })

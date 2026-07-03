@@ -128,6 +128,7 @@ export default function SectionsEditor() {
         .select('id, name, image_url, images, price')
         .ilike('name', `%${searchQuery}%`)
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .limit(6)
       setSearchResults((data || []).filter(p => !activeSection?.product_ids.includes(p.id)))
     } finally {

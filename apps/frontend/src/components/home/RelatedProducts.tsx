@@ -66,6 +66,7 @@ export function RelatedProducts({ currentProductId, category, branchId }: Props)
         `)
         .eq('category', category)
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .neq('id', currentProductId)
         .order('created_at', { ascending: false })
         .limit(10);

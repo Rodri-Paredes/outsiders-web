@@ -73,7 +73,7 @@ export const productsService = {
       .from('products')
       .select(`
         id, name, image_url, images, price, original_price, discount_percentage,
-        category, is_new_in, is_visible, sort_order, size_guide_id, created_at,
+        category, is_new_in, is_visible, visible_on_web, sort_order, size_guide_id, created_at,
         variants:product_variants(
           id, size,
           stock(quantity, branch_id)
@@ -85,6 +85,7 @@ export const productsService = {
         )
       `)
       .eq('is_visible', true)
+      .eq('visible_on_web', true)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 

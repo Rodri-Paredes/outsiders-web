@@ -74,6 +74,7 @@ export default function FeaturedProductsEditor() {
         .select('id, name, image_url, images, price')
         .ilike('name', `%${searchQuery}%`)
         .eq('is_visible', true)
+        .eq('visible_on_web', true)
         .limit(8)
 
       if (error) throw error

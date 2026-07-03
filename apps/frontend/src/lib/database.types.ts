@@ -3,6 +3,7 @@ export interface Product {
   name: string
   description: string
   category?: string
+  base_price?: number
   price: number
   original_price?: number | null
   discount_percentage?: number | null
@@ -11,6 +12,7 @@ export interface Product {
   images?: string[]
   drop_id?: string
   is_visible: boolean
+  visible_on_web?: boolean
   is_new_in?: boolean
   web_only?: boolean
   sort_order?: number

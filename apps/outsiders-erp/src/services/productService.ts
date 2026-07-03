@@ -176,19 +176,20 @@ export const productService = {
     name: string;
     description?: string;
     category: string;
-    price: number;
-    original_price?: number | null;
+    base_price: number;
     discount_percentage?: number | null;
     image_url?: string;
     images?: string[];
     drop_id?: string;
   }) {
     try {
-      // Clean up: only send fields that the DB actually has
+      // Clean up: only send fields that the DB actually has.
+      // `price` y `original_price` son columnas generadas por Postgres — no se
+      // envían nunca, se recalculan solas a partir de base_price + discount_percentage.
       const insertData: Record<string, any> = {
         name: product.name,
         category: product.category,
-        price: product.price,
+        base_price: product.base_price,
         is_visible: true,
       };
 
@@ -199,12 +200,10 @@ export const productService = {
       if ((product as any).sku) insertData.sku = (product as any).sku;
       if ((product as any).is_new_in !== undefined) insertData.is_new_in = (product as any).is_new_in;
       if ((product as any).web_only !== undefined) insertData.web_only = (product as any).web_only;
+      if ((product as any).visible_on_web !== undefined) insertData.visible_on_web = (product as any).visible_on_web;
       if ((product as any).size_guide_id != null) insertData.size_guide_id = (product as any).size_guide_id;
 
-      // Only include discount fields if they have values
-      if (product.original_price != null && product.original_price > 0) {
-        insertData.original_price = product.original_price;
-      }
+      // Only include discount_percentage if it has a value
       if (product.discount_percentage != null && product.discount_percentage > 0) {
         insertData.discount_percentage = product.discount_percentage;
       }
@@ -230,7 +229,7 @@ export const productService = {
     try {
       // Remove relational/computed fields that are NOT columns
       const { tags, ...rest } = updates as any;
-      
+
       // Clean up undefined values
       const cleanUpdates: Record<string, any> = {};
       for (const [key, value] of Object.entries(rest)) {
@@ -238,10 +237,14 @@ export const productService = {
           cleanUpdates[key] = value;
         }
       }
-      
+
       // Remove fields that don't exist as columns
       delete cleanUpdates.id;
       delete cleanUpdates.created_at;
+      // `price` y `original_price` son columnas generadas por Postgres a partir
+      // de base_price + discount_percentage: escribirlas directamente falla.
+      delete cleanUpdates.price;
+      delete cleanUpdates.original_price;
 
       const { data, error } = await supabase
         .from('products')
