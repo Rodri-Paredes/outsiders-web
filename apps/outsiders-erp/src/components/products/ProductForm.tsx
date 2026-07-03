@@ -152,9 +152,18 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     };
   }, [formData.base_price, formData.discount_percentage, formData.markdown_percentage, tier1Price]);
 
-  // When discountedPriceInput or base_price changes → recalculate discount_percentage.
-  // base_price en sí NUNCA se toca acá: el descuento se calcula siempre sobre
-  // el precio base, y quitarlo (discount_percentage = null) lo restaura solo.
+  // Recalcula discount_percentage SOLO cuando el admin edita el campo "Precio
+  // con descuento" directamente. OJO: antes esto también escuchaba cambios de
+  // formData.base_price, lo cual causaba un bug real — al editar el precio
+  // base de un producto que YA tenía un descuento activo, este efecto volvía
+  // a dispararse con el discountedPriceInput viejo (el precio con descuento
+  // anterior, ej. 249.99) y recalculaba un % nuevo para forzar que el precio
+  // final siguiera siendo ese valor viejo, ignorando el precio base recién
+  // tipeado. Resultado: el admin ponía "350" en precio base y el producto
+  // terminaba costando "249.99" igual. Al sacar base_price de las deps, el
+  // % de descuento quedo fijo cuando se edita el precio base (el descuento
+  // se sigue aplicando, pero sobre el precio base nuevo) — solo se recalcula
+  // si el admin toca el campo de precio con descuento explícitamente.
   useEffect(() => {
     const basePrice = formData.base_price;
     const discountedPrice = parseFloat(discountedPriceInput);
@@ -166,11 +175,12 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       setFormData(prev => ({ ...prev, discount_percentage: null }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discountedPriceInput, formData.base_price]);
+  }, [discountedPriceInput]);
 
-  // When markdownPriceInput o tier1Price cambian → recalcular markdown_percentage.
-  // Igual que con el primer descuento: nunca se toca tier1Price/base_price acá,
-  // solo se deriva el % del segundo descuento.
+  // Mismo fix que arriba, para el segundo descuento: solo se recalcula
+  // markdown_percentage cuando el admin edita markdownPriceInput a mano, no
+  // como efecto colateral de que cambie tier1Price (que depende de base_price
+  // y discount_percentage).
   useEffect(() => {
     if (tier1Price == null) return; // sin primer descuento no puede haber segundo
     const finalPrice = parseFloat(markdownPriceInput);
@@ -181,7 +191,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       setFormData(prev => ({ ...prev, markdown_percentage: null }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [markdownPriceInput, tier1Price]);
+  }, [markdownPriceInput]);
 
   // Load tags when category changes
   useEffect(() => {
