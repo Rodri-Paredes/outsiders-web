@@ -13,7 +13,14 @@ import { BranchModal } from '@/components/BranchModal';
 const montserrat = Montserrat({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://outsiders-web.vercel.app'),
+  // Fallback apuntando al dominio real de producción — NEXT_PUBLIC_SITE_URL no
+  // está configurada en Vercel, y el fallback viejo ("outsiders-web.vercel.app")
+  // es un dominio muerto (404). Con eso, todas las URLs relativas de metadata
+  // (og:image, og:url, etc.) se resolvían contra una URL inexistente: Instagram
+  // no podía bajar la imagen, fallaba, y volvía a su heurística de fallback
+  // (agarraba el logo del navbar y lo recortaba) — el mismo síntoma de antes,
+  // pero con otra causa.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://outsidersbrand.shop'),
   title: 'OUTSIDERS - Urban Streetwear',
   description: 'Ropa urbana para los que se atreven a ser diferentes. Diseños únicos y drops exclusivos.',
   keywords: ['streetwear', 'ropa urbana', 'fashion', 'outsiders', 'drops', 'bolivia'],
