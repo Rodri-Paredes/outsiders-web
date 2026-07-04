@@ -67,13 +67,27 @@ function mapProduct(p: any, branchId?: string): Product {
   } as Product & { images: string[] };
 }
 
+// Caché corta en memoria para el catálogo completo (usado por /shop). No
+// cambia qué se pide ni cómo se filtra — solo evita repetir el mismo fetch
+// completo a Supabase si se vuelve a montar /shop (ej. con el botón "atrás")
+// dentro de la misma sesión de navegación. Se resetea con un F5 completo.
+const PRODUCTS_CACHE_TTL_MS = 60_000;
+const productsCache = new Map<string, { data: Product[]; expiresAt: number }>();
+
 export const productsService = {
   async getProducts(branchId?: string): Promise<Product[]> {
+    const cacheKey = branchId || 'all';
+    const cached = productsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     const { data, error } = await supabase
       .from('products')
       .select(`
-        id, name, image_url, images, price, original_price, discount_percentage,
-        category, is_new_in, is_visible, visible_on_web, sort_order, size_guide_id, created_at,
+        id, name, image_url, images, price, original_price, mid_price,
+        discount_percentage, markdown_percentage,
+        category, is_new_in, web_only, is_visible, visible_on_web, sort_order, size_guide_id, created_at,
         variants:product_variants(
           id, size,
           stock(quantity, branch_id)
@@ -94,7 +108,9 @@ export const productsService = {
       return [];
     }
 
-    return (data || []).map((p) => mapProduct(p, branchId));
+    const mapped = (data || []).map((p) => mapProduct(p, branchId));
+    productsCache.set(cacheKey, { data: mapped, expiresAt: Date.now() + PRODUCTS_CACHE_TTL_MS });
+    return mapped;
   },
 
   async getAll(): Promise<Product[]> {
@@ -127,17 +143,21 @@ export const productsService = {
     const { data, error } = await supabase
       .from('products')
       .select(`
-        *,
+        id, name, description, category, price, original_price, mid_price,
+        discount_percentage, markdown_percentage, image_url, images,
+        is_new_in, web_only, visible_on_web, size_guide_id, created_at,
         variants:product_variants(
-          *,
-          stock(*)
+          id, size, price_override,
+          stock(quantity, branch_id)
         ),
         tags:product_tag_assignments(
           id,
           tag_id,
-          tag:product_tags(*)
+          tag:product_tags(id, name, tag_group)
         )
       `)
+      // Nota: se piden columnas explícitas (no "select *") — evita mandar
+      // cost_price/base_price y otros campos internos a un cliente anónimo.
       .eq('id', id)
       .single();
 
@@ -147,6 +167,32 @@ export const productsService = {
     }
 
     return data ? mapProduct(data, branchId) : null;
+  },
+
+  /**
+   * Trae SOLO el stock por variante (sin imágenes, descripción, tags, etc).
+   * Se usa para refrescar el stock por sucursal en el cliente sin repetir la
+   * descarga completa del producto que el servidor ya mandó en el HTML inicial.
+   */
+  async getVariantsStock(productId: string, branchId?: string): Promise<{ size: string; stock: number }[]> {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('size, stock(quantity, branch_id)')
+      .eq('product_id', productId);
+
+    if (error) {
+      console.error(`Error fetching stock for product ${productId}:`, error);
+      return [];
+    }
+
+    return (data || []).map((v: any) => {
+      const stockRows = (v.stock || []) as { quantity: number; branch_id: string }[];
+      const relevant = branchId ? stockRows.filter((s) => s.branch_id === branchId) : stockRows;
+      return {
+        size: v.size,
+        stock: relevant.reduce((sum, s) => sum + (s.quantity || 0), 0),
+      };
+    });
   },
 
   async create(product: Omit<Product, 'id' | 'created_at' | 'updated_at'>): Promise<Product> {

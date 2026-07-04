@@ -351,9 +351,12 @@ export const productService = {
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
+      // cacheControl largo: filePath incluye random+timestamp, nunca se
+      // reemplaza — evita que weserv.nl (o cualquier cliente) vuelva a
+      // pedirle el archivo a Supabase Storage más seguido de lo necesario.
       const { error: uploadError } = await supabase.storage
         .from('products')
-        .upload(filePath, compressedFile);
+        .upload(filePath, compressedFile, { cacheControl: '31536000' });
 
       if (uploadError) throw uploadError;
 

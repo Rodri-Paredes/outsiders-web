@@ -78,5 +78,9 @@ export default async function ProductPage({ params }: ProductRouteParams) {
     notFound();
   }
 
-  return <ProductPageClient slug={params.id} />;
+  // El servidor ya trajo el producto completo (arriba, para metadata/notFound).
+  // Se lo pasamos al cliente como dato inicial en vez de dejar que lo vuelva a
+  // pedir entero al montar — antes se descargaba el mismo producto dos veces
+  // por visita (una acá, otra en el cliente).
+  return <ProductPageClient slug={params.id} initialProduct={product} />;
 }

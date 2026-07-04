@@ -42,9 +42,12 @@ export default function ImageUploader({
         const fileExt = compressedFile.name.split('.').pop() || 'jpg';
         const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
+        // cacheControl largo: el nombre de archivo es único (timestamp/random),
+        // nunca se reemplaza en el mismo path, así que cachear "para siempre"
+        // es seguro y evita que se vuelva a descargar de Supabase Storage.
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(fileName, compressedFile)
+          .upload(fileName, compressedFile, { cacheControl: '31536000' })
 
         if (uploadError) {
           throw uploadError

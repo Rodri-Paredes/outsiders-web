@@ -1,154 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
-import { productsService } from '@/services/products.service';
 import { Product } from '@/lib/database.types';
 import { NewInConfig } from '@/services/cms.service';
-import { useBranch } from '@/contexts/BranchContext';
 import { getWeservUrl } from '@/utils/weserv';
 import { formatCurrency } from '@/utils/format';
 
 interface Props {
   config: NewInConfig;
+  products: Product[];
 }
 
-export function NewIn({ config }: Props) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const { selectedBranch, isLoaded: branchLoaded } = useBranch();
-  const branchId = selectedBranch?.id;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (mounted && branchLoaded) {
-      loadProducts();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, branchLoaded, branchId]);
-
-  const loadProducts = async () => {
-    try {
-      const ids = config?.product_ids ?? [];
-
-      if (ids.length > 0) {
-        const { data } = await supabase
-          .from('products')
-          .select(`
-            *,
-            variants:product_variants(
-              *,
-              stock(*)
-            )
-          `)
-          .in('id', ids)
-          .eq('is_visible', true)
-          .eq('visible_on_web', true);
-        if (data && data.length > 0) {
-          const mapped = ids
-            .map(id => data.find((p: any) => p.id === id))
-            .filter(Boolean)
-            .map((p: any) => {
-              let parsedImages: string[] = [];
-              if (Array.isArray(p.images)) parsedImages = p.images;
-              else if (typeof p.images === 'string') {
-                try { parsedImages = JSON.parse(p.images); } catch {
-                  parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.trim().replace(/^"|"$/g, '')).filter(Boolean);
-                }
-              }
-              if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
-
-              let totalStock = 0;
-              (p.variants || []).forEach((v: any) => {
-                (v.stock || []).forEach((s: any) => {
-                  if (!branchId || s.branch_id === branchId) {
-                    totalStock += s.quantity || 0;
-                  }
-                });
-              });
-
-              return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
-            });
-
-          setProducts(mapped as Product[]);
-          return;
-        }
-      }
-
-      // Fallback: los más recientes por created_at
-      const { data } = await supabase
-        .from('products')
-        .select(`
-          *,
-          variants:product_variants(
-            *,
-            stock(*)
-          )
-        `)
-        .eq('is_visible', true)
-        .eq('visible_on_web', true)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const mapped = (data || []).map((p: any) => {
-        let parsedImages: string[] = [];
-        if (Array.isArray(p.images)) parsedImages = p.images;
-        else if (typeof p.images === 'string') {
-          try { parsedImages = JSON.parse(p.images); } catch {
-            parsedImages = p.images.replace(/^{|}$/g, '').split(',').map((u: string) => u.trim().replace(/^"|"$/g, '')).filter(Boolean);
-          }
-        }
-        if (parsedImages.length === 0 && p.image_url) parsedImages = [p.image_url];
-
-        let totalStock = 0;
-        (p.variants || []).forEach((v: any) => {
-          (v.stock || []).forEach((s: any) => {
-            if (!branchId || s.branch_id === branchId) {
-              totalStock += s.quantity || 0;
-            }
-          });
-        });
-
-        return { ...p, images: parsedImages, stock: totalStock, hasStock: totalStock > 0 } as Product;
-      });
-
-      setProducts(mapped);
-    } catch (err) {
-      console.error('[NewIn] Error loading products:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+// Los productos ya vienen resueltos desde el servidor (ver app/page.tsx +
+// homeCatalog.server.ts, cacheados 60s) — este componente solo se encarga de
+// la animación y el render, ya no le pega a Supabase desde el navegador.
+export function NewIn({ config, products }: Props) {
   const sectionTitle = config?.title || 'New In';
-
-  if (loading) {
-    return (
-      <section className="py-16 md:py-20 bg-white">
-        <div className="w-full px-4 md:px-8 max-w-[1800px] mx-auto">
-          <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
-            <h2 className="text-xl md:text-2xl font-bold text-black tracking-tighter uppercase">{sectionTitle}</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            {[1, 2, 3, 4, 5].map(i => (
-              <div key={i} className="space-y-3">
-                <div className="aspect-[4/5] bg-gray-100 animate-pulse" />
-                <div className="h-3 bg-gray-100 animate-pulse w-3/4" />
-                <div className="h-3 bg-gray-100 animate-pulse w-1/2" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   if (products.length === 0) return null;
 

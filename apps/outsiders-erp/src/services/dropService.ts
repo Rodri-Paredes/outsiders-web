@@ -231,9 +231,11 @@ export const dropService = {
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = `drops/${fileName}`;
 
+      // cacheControl largo: filePath incluye timestamp/random, nunca se
+      // reemplaza — cachear "para siempre" es seguro.
       const { error: uploadError } = await supabase.storage
         .from('drops')
-        .upload(filePath, compressedFile);
+        .upload(filePath, compressedFile, { cacheControl: '31536000' });
 
       if (uploadError) throw uploadError;
 

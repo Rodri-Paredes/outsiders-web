@@ -107,7 +107,8 @@ export function SizeGuidesPage() {
   const uploadImage = async (file: File): Promise<string | null> => {
     const ext = file.name.split('.').pop();
     const path = `size-guides/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('product-images').upload(path, file);
+    // cacheControl largo: el path incluye timestamp, nunca se reemplaza.
+    const { error } = await supabase.storage.from('product-images').upload(path, file, { cacheControl: '31536000' });
     if (error) {
       console.error('Upload error', error);
       return null;

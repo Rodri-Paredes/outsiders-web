@@ -21,15 +21,30 @@ import { formatCurrency } from '@/utils/format';
 
 // Sizes are now loaded dynamically from product variants
 
-export default function ProductPageClient({ slug }: { slug: string }) {
+export default function ProductPageClient({ slug, initialProduct }: { slug: string; initialProduct: Product }) {
   const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  // El servidor ya trajo el producto completo (usado también para generateMetadata);
+  // se usa directamente en vez de volver a pedirlo entero acá. Solo el stock
+  // por sucursal se refresca en el cliente (ver efecto de abajo), porque la
+  // sucursal seleccionada solo se conoce en el navegador (localStorage). Los
+  // datos "estáticos" del producto (nombre, imágenes, precio) no cambian sin
+  // recargar la página, así que no hace falta estado para esto.
+  const product = initialProduct;
   const [selectedSize, setSelectedSize] = useState('M');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
-  const [availableSizes, setAvailableSizes] = useState<{[key: string]: number}>({});
+  const [availableSizes, setAvailableSizes] = useState<{[key: string]: number}>(() => {
+    // Valor inicial aproximado con lo que ya trajo el servidor (stock de
+    // todas las sucursales combinado), para no mostrar "sin stock" un
+    // instante antes de que se resuelva el stock real de la sucursal.
+    const sizeStock: { [key: string]: number } = {};
+    initialProduct.variants?.forEach((variant: any) => {
+      const stockArr = variant.stock || [];
+      sizeStock[variant.size] = stockArr.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
+    });
+    return sizeStock;
+  });
   const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(null);
   const [sizeGuideLoading, setSizeGuideLoading] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
@@ -88,55 +103,38 @@ export default function ProductPageClient({ slug }: { slug: string }) {
     });
   }, [product?.id]);
 
+  // Solo refresca el stock por talla/sucursal — NO vuelve a pedir el producto
+  // completo (imágenes, descripción, tags, precio), que el servidor ya mandó
+  // en el HTML inicial. Antes esto hacía un fetch completo del producto de
+  // nuevo acá, duplicando la transferencia en cada visita.
   useEffect(() => {
-    const loadProduct = async () => {
+    const loadStock = async () => {
       try {
-        setLoading(true);
-
-        // Fetch only this product, passing the selected branch to get accurate stock filtering
         const branchId = selectedBranch?.id;
-        const foundProduct = await productsService.getById(productId, branchId);
+        const stockData = await productsService.getVariantsStock(productId, branchId);
 
-        if (foundProduct) {
-          setProduct(foundProduct);
+        const sizeStock: { [key: string]: number } = {};
+        stockData.forEach(({ size, stock }) => {
+          sizeStock[size] = stock;
+        });
+        setAvailableSizes(sizeStock);
 
-          // Calculate available stock per size — use branchStock (branch-filtered) when available
-          const sizeStock: {[key: string]: number} = {};
-          foundProduct.variants?.forEach((variant: any) => {
-            const stockArr = variant.branchStock ?? variant.stock;
-            const totalStock = stockArr?.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0) || 0;
-            sizeStock[variant.size] = totalStock;
-          });
-          setAvailableSizes(sizeStock);
-
-          // Build sizes list from variants
-          const variantSizes = foundProduct.variants?.map(v => v.size) || [];
-
-          // Set default selected size to first available size
-          const firstAvailableSize = variantSizes.find(size => (sizeStock[size] || 0) > 0);
-          if (firstAvailableSize) {
-            setSelectedSize(firstAvailableSize);
-          } else if (variantSizes.length > 0) {
-            setSelectedSize(variantSizes[0]);
-          }
-        } else {
-          console.error('Product not found for ID:', productId);
-          toast.error('Producto no encontrado');
-          router.push('/shop');
+        const variantSizes = stockData.map((v) => v.size);
+        const firstAvailableSize = variantSizes.find((size) => (sizeStock[size] || 0) > 0);
+        if (firstAvailableSize) {
+          setSelectedSize(firstAvailableSize);
+        } else if (variantSizes.length > 0) {
+          setSelectedSize(variantSizes[0]);
         }
       } catch (error) {
-        console.error('Error loading product:', error);
-        toast.error('Error al cargar el producto');
-        router.push('/shop');
-      } finally {
-        setLoading(false);
+        console.error('Error loading stock:', error);
       }
     };
 
     if (productId) {
-      loadProduct();
+      loadStock();
     }
-  }, [productId, router, selectedBranch]);
+  }, [productId, selectedBranch]);
 
   const handleAddToCart = () => {
     const selectedSizeStock = availableSizes[selectedSize] || 0;
@@ -203,23 +201,10 @@ export default function ProductPageClient({ slug }: { slug: string }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white pt-24 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Cargando producto...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!product) {
-    return null;
-  }
-
   const images = (product as any).images || [product.image_url].filter(Boolean);
-  const hasStock = (product as any).hasStock;
+  // Se deriva del stock por sucursal ya refrescado en el cliente (availableSizes),
+  // no del valor que trajo el servidor (que combina todas las sucursales).
+  const hasStock = Object.values(availableSizes).some((qty) => qty > 0);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);

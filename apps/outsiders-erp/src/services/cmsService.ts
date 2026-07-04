@@ -49,18 +49,19 @@ export const cmsService = {
     const ext = compressedFile.name.split('.').pop() || 'jpg';
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    // Try 'cms' bucket first, fall back to 'products'
+    // Try 'cms' bucket first, fall back to 'products'.
+    // cacheControl largo: fileName incluye timestamp+random, nunca se reemplaza.
     let bucket = 'cms';
     const { error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(fileName, compressedFile);
+      .upload(fileName, compressedFile, { cacheControl: '31536000' });
 
     if (uploadError) {
       // Try products bucket as fallback
       bucket = 'products';
       const { error: fallbackError } = await supabase.storage
         .from(bucket)
-        .upload(fileName, compressedFile);
+        .upload(fileName, compressedFile, { cacheControl: '31536000' });
       if (fallbackError) throw fallbackError;
     }
 
