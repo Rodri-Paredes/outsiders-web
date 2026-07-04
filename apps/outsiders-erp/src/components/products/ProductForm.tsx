@@ -1,6 +1,6 @@
 import { formatCurrency } from '../../lib/utils';
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock, Ruler } from 'lucide-react';
+import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock, Ruler, Globe, Store } from 'lucide-react';
 import { Product, ProductTag } from '../../lib/types';
 import { productService } from '../../services/productService';
 import { stockService } from '../../services/stockService';
@@ -640,39 +640,54 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                 </span>
               </label>
 
-              {/* WEB ONLY toggle */}
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <div
-                  onClick={() => setFormData(prev => ({ ...prev, web_only: !prev.web_only }))}
-                  className={`relative w-10 h-6 rounded-full transition-colors ${formData.web_only ? 'bg-blue-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.web_only ? 'left-5' : 'left-1'}`} />
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  <span className="font-bold text-blue-700">Solo disponible en la web</span>
-                  <span className="ml-2 text-xs text-gray-400">(muestra badge "SOLO WEB" en tienda)</span>
-                </span>
-              </label>
+              {/* ===== DÓNDE SE PUEDE COMPRAR ESTE PRODUCTO ===== */}
+              <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+                <h4 className="text-sm font-semibold text-gray-900">
+                  ¿Dónde se puede comprar este producto?
+                </h4>
 
-              {/* VISIBLE ON WEB toggle */}
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <div
-                  onClick={() => setFormData(prev => ({ ...prev, visible_on_web: !prev.visible_on_web }))}
-                  className={`relative w-10 h-6 rounded-full transition-colors ${formData.visible_on_web ? 'bg-black' : 'bg-orange-500'}`}
-                >
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.visible_on_web ? 'left-5' : 'left-1'}`} />
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  <span className={formData.visible_on_web ? 'font-bold text-black' : 'font-bold text-orange-700'}>
-                    {formData.visible_on_web ? 'Visible en la tienda web' : 'Solo venta en ERP / POS'}
+                {/* WEB ONLY toggle: el producto NO se vende en el local/POS */}
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, web_only: !prev.web_only }))}
+                    className={`relative w-10 h-6 rounded-full transition-colors mt-0.5 flex-shrink-0 ${formData.web_only ? 'bg-blue-600' : 'bg-gray-200'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.web_only ? 'left-5' : 'left-1'}`} />
+                  </div>
+                  <span className="text-sm text-gray-700">
+                    <span className="flex items-center gap-1.5 font-bold text-blue-700">
+                      <Globe size={14} />
+                      No vender en el local (solo por internet)
+                    </span>
+                    <span className="block mt-0.5 text-xs text-gray-500">
+                      {formData.web_only
+                        ? 'Activado: este producto NO se puede vender desde el POS/local. Solo se compra por la tienda online.'
+                        : 'Desactivado: se puede vender normalmente en el local y por internet.'}
+                    </span>
                   </span>
-                  <span className="ml-2 text-xs text-gray-400">
-                    {formData.visible_on_web
-                      ? '(aparece en catálogo, búsqueda y tiene URL pública)'
-                      : '(no aparece en la web ni en búsquedas; se sigue vendiendo desde el ERP)'}
+                </label>
+
+                {/* VISIBLE ON WEB toggle: el producto NO aparece en el sitio web */}
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, visible_on_web: !prev.visible_on_web }))}
+                    className={`relative w-10 h-6 rounded-full transition-colors mt-0.5 flex-shrink-0 ${formData.visible_on_web ? 'bg-black' : 'bg-orange-500'}`}
+                  >
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.visible_on_web ? 'left-5' : 'left-1'}`} />
+                  </div>
+                  <span className="text-sm text-gray-700">
+                    <span className={`flex items-center gap-1.5 font-bold ${formData.visible_on_web ? 'text-black' : 'text-orange-700'}`}>
+                      <Store size={14} />
+                      Publicar en la tienda online
+                    </span>
+                    <span className="block mt-0.5 text-xs text-gray-500">
+                      {formData.visible_on_web
+                        ? 'Activado: aparece en el catálogo de la tienda online, en el buscador, y tiene su propia página con link para compartir. También se puede vender desde el local/POS.'
+                        : 'Desactivado: este producto NO se ve en la tienda online (no aparece en el catálogo, no sale en el buscador y no tiene página propia). Se sigue vendiendo sin problema desde el local/POS.'}
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              </div>
 
               {/* ===== SECCIÓN DE PRECIOS Y DESCUENTOS ===== */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
