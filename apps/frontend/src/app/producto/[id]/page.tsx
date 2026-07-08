@@ -11,6 +11,14 @@ interface ProductRouteParams {
   params: { id: string };
 }
 
+// Sin esto, Next.js no tenía ninguna directiva de cache explícita para esta
+// ruta y terminaba cacheando el render (con los datos de Supabase de ese
+// momento) de forma efectivamente indefinida desde la primera visita — un
+// producto con precio o descuento actualizado seguía mostrando el valor
+// viejo para siempre, sin importar los cambios hechos después en el ERP.
+// Mismo patrón ya probado en producción en /best-sellers.
+export const revalidate = 60;
+
 // `cache()` deduplica el fetch entre generateMetadata() y el componente de
 // página: Next.js invoca ambos para la misma request, y sin esto se pegaría
 // dos veces a Supabase por cada visita.

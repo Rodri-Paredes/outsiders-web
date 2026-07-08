@@ -21,6 +21,12 @@ const STORES_DATA = [
   },
 ];
 
+// Sin esta directiva, Next cachea el render de forma efectivamente
+// indefinida desde la primera visita (mismo problema encontrado en
+// /producto/[id]). Acá el riesgo es menor (fotos de tienda, no precios),
+// pero igual conviene no dejarlo sin acotar.
+export const revalidate = 3600;
+
 async function getStorePhotos(folder: string): Promise<string[]> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
