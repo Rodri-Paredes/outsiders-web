@@ -15,7 +15,7 @@ interface StoreCardProps {
 export function StoreCard({ city, address, url, schedule, photos }: StoreCardProps) {
   const [current, setCurrent] = useState(0);
   const [hovered, setHovered] = useState(false);
-  const images = photos.length > 0 ? photos : ['/stores/central.png'];
+  const images = photos.length > 0 ? photos : ['/store-assets/central.png'];
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Auto-advance every 3 seconds, pauses on hover
