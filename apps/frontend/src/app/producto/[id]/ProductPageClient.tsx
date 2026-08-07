@@ -18,6 +18,13 @@ import { extractProductId } from '@/utils/productSlug';
 import { useAuth } from '@/contexts/AuthContext';
 import { favoritesService } from '@/services/favorites.service';
 import { formatCurrency } from '@/utils/format';
+import dynamic from 'next/dynamic';
+
+// BETA — Sección 3D/AR: se carga lazy para no impactar el bundle principal
+const ARProductSection = dynamic(
+  () => import('@/components/ar/ARProductSection'),
+  { ssr: false }
+);
 
 // Sizes are now loaded dynamically from product variants
 
@@ -474,6 +481,14 @@ export default function ProductPageClient({ slug, initialProduct }: { slug: stri
               <Heart className={`w-4 h-4 ${isFavorite ? 'fill-red-500' : ''}`} />
               {isFavorite ? 'En Favoritos' : 'Agregar a Favoritos'}
             </button>
+
+            {/* ============================================================
+             * BETA — Sección de Experiencia 3D / Realidad Aumentada
+             * Se muestra debajo del botón de favoritos, dentro del panel
+             * de info del producto. Usa un modelo genérico de demo.
+             * En producción, cada producto tendrá su propio modelo 3D.
+             * ============================================================ */}
+            <ARProductSection productName={product.name} />
           </div>
         </div>
       </div>
