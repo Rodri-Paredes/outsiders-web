@@ -9,6 +9,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { BranchProvider } from '@/contexts/BranchContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { BranchModal } from '@/components/BranchModal';
+import { MetaPixel } from '@/components/MetaPixel';
 
 const montserrat = Montserrat({ subsets: ['latin'] });
 
@@ -73,6 +74,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={montserrat.className}>
+        <MetaPixel />
         <AuthProvider>
         <BranchProvider>
           <BranchModal />
