@@ -41,6 +41,7 @@ const ModelViewer3D = dynamic(() => import('./ModelViewer3D'), {
  * the product's database record (e.g. product.model_glb, product.model_usdz).
  */
 const DEFAULT_MODEL_GLB = '/models/hoodie.glb';
+const DEFAULT_MODEL_USDZ = '/models/hoodie.usdz';
 
 interface ARProductSectionProps {
   /** Product name — used for alt text and labels */
@@ -59,7 +60,7 @@ export default function ARProductSection({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const glbSrc = modelGlb || DEFAULT_MODEL_GLB;
-  const usdzSrc = modelUsdz || undefined;
+  const usdzSrc = modelUsdz || DEFAULT_MODEL_USDZ;
 
   return (
     <section
