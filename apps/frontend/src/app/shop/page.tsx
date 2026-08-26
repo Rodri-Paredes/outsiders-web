@@ -29,6 +29,7 @@ function ShopContent() {
   });
   const [selectedTags, setSelectedTags] = useState<string[]>(searchParams.get('tag') ? [searchParams.get('tag') as string] : []);
   const [showOnlySale, setShowOnlySale] = useState(searchParams.get('sale') === 'true');
+  const [showOnlyNewIn, setShowOnlyNewIn] = useState(() => searchParams.get('new_in') === 'true' || searchParams.get('newIn') === 'true' || searchParams.get('new') === 'true');
   const [priceSpecialsOrder, setPriceSpecialsOrder] = useState<string[]>([]);
   
   const { selectedBranch } = useBranch();
@@ -66,6 +67,7 @@ function ShopContent() {
     const cat = searchParams.get('category');
     const tag = searchParams.get('tag');
     const saleParam = searchParams.get('sale');
+    const newInParam = searchParams.get('new_in') === 'true' || searchParams.get('newIn') === 'true' || searchParams.get('new') === 'true';
 
     if (q !== null) setSearchTerm(q);
     if (cat !== null) {
@@ -80,6 +82,7 @@ function ShopContent() {
     }
     
     setShowOnlySale(saleParam === 'true');
+    setShowOnlyNewIn(newInParam);
     
     // Si viene un tag en la URL, lo seleccionamos, pero solo si no está ya
     if (tag) {
@@ -238,13 +241,15 @@ function ShopContent() {
 
     const matchesSale = !showOnlySale || (product.original_price && product.discount_percentage && product.discount_percentage > 0);
     
+    const matchesNewIn = !showOnlyNewIn || Boolean((product as any).is_new_in);
+
     const matchesTags =
       selectedTags.length === 0 ||
       selectedTags.every((tagName) => 
         product.tags?.some((t) => t.tag?.name === tagName)
       );
 
-    return matchesSearch && matchesCategory && matchesTags && matchesSale;
+    return matchesSearch && matchesCategory && matchesTags && matchesSale && matchesNewIn;
   }).sort((a, b) => {
     // When showing only sale products and a custom order is saved, use it
     if (showOnlySale && priceSpecialsOrder.length > 0) {
@@ -286,6 +291,7 @@ function ShopContent() {
 
   const clearFilters = () => {
     setSelectedTags([]);
+    setShowOnlyNewIn(false);
   };
 
   // Prevent hydration errors by rendering only on client
@@ -425,6 +431,23 @@ function ShopContent() {
               </button>
             </div>
           </div>
+
+          {/* Active New In Filter Indicator */}
+          {showOnlyNewIn && (
+            <div className="flex items-center gap-2 pt-1 pb-1 animate-in fade-in duration-300">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filtro activo:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-black text-white text-[10px] font-bold uppercase tracking-widest rounded-full">
+                NEW IN
+                <button 
+                  onClick={() => setShowOnlyNewIn(false)}
+                  className="hover:opacity-70 transition-opacity ml-1 p-0.5"
+                  title="Quitar filtro New In"
+                >
+                  <X size={12} strokeWidth={2.5} />
+                </button>
+              </span>
+            </div>
+          )}
 
           {/* Sub-categories for group categories (Sudaderas → Hoodies/Quarter Zip, Pantalones → Jeans/Jogger) */}
           {CATEGORY_GROUPS[selectedCategory] && (
