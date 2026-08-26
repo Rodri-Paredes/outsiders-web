@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getWeservUrl } from '@/utils/weserv';
@@ -17,6 +18,21 @@ export function HeroSection({ content }: { content?: any }) {
       
   const mobileTitle = content?.title || "";
   const mobileSubtitle = content?.subtitle || "";
+
+  // Dynamic link target for the hero (collection/shop)
+  const targetLink = (() => {
+    const rawLink = content?.cta_link;
+    if (!rawLink) return '/shop';
+    try {
+      if (rawLink.startsWith('http://') || rawLink.startsWith('https://')) {
+        const url = new URL(rawLink);
+        return url.pathname + url.search + url.hash;
+      }
+    } catch (e) {
+      // fallback
+    }
+    return rawLink;
+  })();
 
   const [mobileIndex, setMobileIndex] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -52,31 +68,37 @@ export function HeroSection({ content }: { content?: any }) {
             transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0"
           >
-            <motion.div
-              animate={{ scale: [1, 1.06, 1] }}
-              transition={{ duration: 8, ease: "easeInOut" }}
-              className="w-full h-full"
-            >
-              <Image
-                src={getWeservUrl(displayImages[mobileIndex], { w: 1200 })}
-                alt={`Hero Image ${mobileIndex + 1}`}
-                fill
-                className="object-cover object-center"
-                priority
-                sizes="100vw"
-              />
-            </motion.div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            <Link href={targetLink} className="block w-full h-full cursor-pointer relative">
+              <motion.div
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ duration: 8, ease: "easeInOut" }}
+                className="w-full h-full"
+              >
+                <Image
+                  src={getWeservUrl(displayImages[mobileIndex], { w: 1200 })}
+                  alt={`Hero Image ${mobileIndex + 1}`}
+                  fill
+                  className="object-cover object-center"
+                  priority
+                  sizes="100vw"
+                />
+              </motion.div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            </Link>
           </motion.div>
         </AnimatePresence>
 
         {/* Dots indicator */}
         {displayImages.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
             {displayImages.slice(0, displayImages.length).map((_: string, i: number) => (
               <button
                 key={i}
-                onClick={() => { setDirection(i > mobileIndex ? 1 : -1); setMobileIndex(i); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDirection(i > mobileIndex ? 1 : -1);
+                  setMobileIndex(i);
+                }}
                 className={`rounded-full transition-all duration-300 ${
                   i === mobileIndex ? 'w-6 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/40'
                 }`}
@@ -96,21 +118,23 @@ export function HeroSection({ content }: { content?: any }) {
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: idx * 0.1 }}
             className={`relative h-full overflow-hidden ${displayImages.length === 1 ? 'w-full' : 'w-1/2'}`}
           >
-            <motion.div
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-full h-full"
-            >
-              <Image
-                src={getWeservUrl(img, { w: 1920 })}
-                alt={`Hero Image ${idx + 1}`}
-                fill
-                className="object-cover"
-                priority={idx === 0}
-                sizes="50vw"
-              />
-            </motion.div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-50" />
+            <Link href={targetLink} className="block w-full h-full cursor-pointer group">
+              <motion.div
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="w-full h-full"
+              >
+                <Image
+                  src={getWeservUrl(img, { w: 1920 })}
+                  alt={`Hero Image ${idx + 1}`}
+                  fill
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  priority={idx === 0}
+                  sizes="50vw"
+                />
+              </motion.div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
+            </Link>
           </motion.div>
         ))}
 
@@ -119,7 +143,7 @@ export function HeroSection({ content }: { content?: any }) {
             initial={{ height: 0 }}
             animate={{ height: "100%" }}
             transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 }}
-            className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/20 z-10 transform -translate-x-1/2"
+            className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-white/20 z-10 transform -translate-x-1/2 pointer-events-none"
           />
         )}
       </div>
@@ -132,18 +156,20 @@ export function HeroSection({ content }: { content?: any }) {
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.8 }}
           className="absolute bottom-10 left-6 md:bottom-20 md:left-20 z-20"
         >
-          {mobileSubtitle && (
-            <p className="text-[10px] md:text-sm font-bold uppercase tracking-[0.4em] text-white/80 mb-3">
-              {mobileSubtitle}
-            </p>
-          )}
-          {mobileTitle && (
-            <h2 className="text-4xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white leading-[0.85] drop-shadow-2xl">
-              {mobileTitle.split(' ').map((word: string, i: number) => (
-                <span key={i} className="block">{word}</span>
-              ))}
-            </h2>
-          )}
+          <Link href={targetLink} className="block group cursor-pointer">
+            {mobileSubtitle && (
+              <p className="text-[10px] md:text-sm font-bold uppercase tracking-[0.4em] text-white/80 mb-3">
+                {mobileSubtitle}
+              </p>
+            )}
+            {mobileTitle && (
+              <h2 className="text-4xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white leading-[0.85] drop-shadow-2xl group-hover:opacity-90 transition-opacity">
+                {mobileTitle.split(' ').map((word: string, i: number) => (
+                  <span key={i} className="block">{word}</span>
+                ))}
+              </h2>
+            )}
+          </Link>
         </motion.div>
       )}
     </section>
