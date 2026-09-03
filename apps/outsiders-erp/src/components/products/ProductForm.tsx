@@ -32,6 +32,24 @@ interface SizeWithStock {
   priceOverride?: number | null;
 }
 
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'TALLA UNICA'];
+
+export function sortSizesWithStock<T extends { size: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    const sizeA = String(a.size || '').toUpperCase();
+    const sizeB = String(b.size || '').toUpperCase();
+    const iA = SIZE_ORDER.indexOf(sizeA);
+    const iB = SIZE_ORDER.indexOf(sizeB);
+    if (iA !== -1 && iB !== -1) return iA - iB;
+    if (iA !== -1) return -1;
+    if (iB !== -1) return 1;
+    const numA = parseFloat(sizeA);
+    const numB = parseFloat(sizeB);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return sizeA.localeCompare(sizeB);
+  });
+}
+
 export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
   const { activeBranch } = useAuthStore();
   const { isAdmin } = useAuth();
@@ -289,7 +307,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         }
       }
       
-      setSizesWithStock(sizesData);
+      setSizesWithStock(sortSizesWithStock(sizesData));
 
       // Load assigned tags
       if (product.tags) {
@@ -318,12 +336,12 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     // Validar tipo y tamaño de archivos
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        Toast.error('Por favor selecciona solo imágenes válidas');
+        Toast.error('Solo se permiten archivos de imagen');
         return;
       }
 
       if (file.size > 20 * 1024 * 1024) {
-        Toast.error('Las imágenes no deben superar 20MB cada una');
+        Toast.error('La imagen no debe superar los 20MB');
         return;
       }
     }
@@ -334,6 +352,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       return;
     }
 
+    // Guardar los archivos de imagen directamente para subirlos al servidor
     setImageFiles(prev => [...prev, ...files]);
 
     // Crear previews
@@ -357,7 +376,7 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       return;
     }
 
-    setSizesWithStock(prev => [...prev, { size, stock: 0, priceOverride: null }]);
+    setSizesWithStock(prev => sortSizesWithStock([...prev, { size, stock: 0, priceOverride: null }]));
   };
 
   const removeSize = (size: string) => {
@@ -1215,10 +1234,14 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                       <button
                         type="button"
                         onClick={() => {
-                          availableSizesForCategory.forEach(size => {
-                            if (!sizesWithStock.some(s => s.size === size)) {
-                              setSizesWithStock(prev => [...prev, { size, stock: 0, priceOverride: null }]);
-                            }
+                          setSizesWithStock(prev => {
+                            const updated = [...prev];
+                            availableSizesForCategory.forEach(size => {
+                              if (!updated.some(s => s.size === size)) {
+                                updated.push({ size, stock: 0, priceOverride: null });
+                              }
+                            });
+                            return sortSizesWithStock(updated);
                           });
                         }}
                         className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium"

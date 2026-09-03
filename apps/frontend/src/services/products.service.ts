@@ -1,6 +1,24 @@
 import { Product } from '../lib/database.types'
 import { supabase } from '../lib/supabase'
 
+const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'TALLA UNICA'];
+
+function sortVariants(variants: any[]): any[] {
+  return [...variants].sort((a, b) => {
+    const sizeA = String(a.size || '').toUpperCase();
+    const sizeB = String(b.size || '').toUpperCase();
+    const iA = SIZE_ORDER.indexOf(sizeA);
+    const iB = SIZE_ORDER.indexOf(sizeB);
+    if (iA !== -1 && iB !== -1) return iA - iB;
+    if (iA !== -1) return -1;
+    if (iB !== -1) return 1;
+    const numA = parseFloat(sizeA);
+    const numB = parseFloat(sizeB);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return sizeA.localeCompare(sizeB);
+  });
+}
+
 function mapProduct(p: any, branchId?: string): Product {
   let totalStock = 0;
   if (p.variants) {
@@ -20,7 +38,7 @@ function mapProduct(p: any, branchId?: string): Product {
   // When branchId is provided, `stock` is overwritten with ONLY the branch's records.
   // This ensures every component that reads `v.stock` gets branch-correct data
   // without requiring each component to switch to `branchStock`.
-  const filteredVariants = p.variants?.map((v: any) => {
+  const filteredVariants = sortVariants(p.variants?.map((v: any) => {
     const allStock = v.stock || [];
     const branchStock = branchId
       ? allStock.filter((s: any) => s.branch_id === branchId)
@@ -30,7 +48,7 @@ function mapProduct(p: any, branchId?: string): Product {
       stock: branchStock,   // branch-filtered when branchId is provided
       branchStock,
     };
-  }) || [];
+  }) || []);
 
   let parsedImages: string[] = [];
   if (Array.isArray(p.images)) {
