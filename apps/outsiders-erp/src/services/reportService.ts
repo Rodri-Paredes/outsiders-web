@@ -6,15 +6,45 @@ export const reportService = {
    */
   async getDashboardStats(branchId: string, startDate: string, endDate: string) {
     try {
-      const { data, error } = await supabase.rpc('get_sales_stats', {
-        p_branch_id: branchId,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      });
+      // Obtenemos directamente de la tabla sales para evitar multiplicaciones por el JOIN de sale_items
+      const { data: sales, error: salesError } = await supabase
+        .from('sales')
+        .select(`
+          id,
+          total,
+          sale_items(quantity)
+        `)
+        .eq('branch_id', branchId)
+        .gte('sale_date', `${startDate}T00:00:00`)
+        .lte('sale_date', `${endDate}T23:59:59`);
 
-      if (error) throw error;
-      // La función retorna TABLE, así que tomamos el primer elemento
-      return Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (salesError) throw salesError;
+
+      if (!sales || sales.length === 0) {
+        return {
+          total_sales: 0,
+          total_transactions: 0,
+          average_ticket: 0,
+          total_products_sold: 0,
+        };
+      }
+
+      const total_sales = sales.reduce((sum, sale) => sum + (Number(sale.total) || 0), 0);
+      const total_transactions = sales.length;
+      const average_ticket = total_transactions > 0 ? total_sales / total_transactions : 0;
+      const total_products_sold = sales.reduce((sum, sale) => {
+        const itemsQty = Array.isArray(sale.sale_items)
+          ? sale.sale_items.reduce((iSum: number, item: any) => iSum + (Number(item.quantity) || 0), 0)
+          : 0;
+        return sum + itemsQty;
+      }, 0);
+
+      return {
+        total_sales,
+        total_transactions,
+        average_ticket,
+        total_products_sold,
+      };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       throw error;

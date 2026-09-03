@@ -25,7 +25,7 @@ const SizeGuidesPage = lazy(() => import('@/pages/SizeGuidesPage').then(m => ({ 
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user, loadUser, isLoading } = useAuth()
+  const { isAuthenticated, loadUser, isLoading } = useAuth()
 
   useEffect(() => {
     loadUser()
@@ -39,7 +39,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
-  if (!isAuthenticated || (user && user.role === 'user')) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
 
