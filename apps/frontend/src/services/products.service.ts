@@ -82,12 +82,16 @@ export const productsService = {
       return cached.data;
     }
 
-    const { data, error } = await supabase
+    let data: any[] | null = null;
+    let error: any = null;
+
+    const res = await supabase
       .from('products')
       .select(`
         id, name, image_url, images, price, original_price, mid_price,
         discount_percentage, markdown_percentage,
         category, is_new_in, web_only, is_visible, visible_on_web, sort_order, size_guide_id, created_at,
+        branch_visibility:product_branch_visibility(branch_id, visible_on_web),
         variants:product_variants(
           id, size,
           stock(quantity, branch_id)
@@ -103,12 +107,54 @@ export const productsService = {
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: false });
 
+    if (res.error) {
+      // Fallback por si la relación product_branch_visibility aún no existe o falla
+      const fallback = await supabase
+        .from('products')
+        .select(`
+          id, name, image_url, images, price, original_price, mid_price,
+          discount_percentage, markdown_percentage,
+          category, is_new_in, web_only, is_visible, visible_on_web, sort_order, size_guide_id, created_at,
+          variants:product_variants(
+            id, size,
+            stock(quantity, branch_id)
+          ),
+          tags:product_tag_assignments(
+            id,
+            tag_id,
+            tag:product_tags(id, name, tag_group)
+          )
+        `)
+        .eq('is_visible', true)
+        .eq('visible_on_web', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      data = fallback.data;
+      error = fallback.error;
+    } else {
+      data = res.data;
+    }
+
     if (error) {
       console.error('Error fetching products:', error);
       return [];
     }
 
-    const mapped = (data || []).map((p) => mapProduct(p, branchId));
+    let mapped = (data || []).map((p) => mapProduct(p, branchId));
+
+    if (branchId) {
+      mapped = mapped.filter((p: any) => {
+        if (p.branch_visibility && Array.isArray(p.branch_visibility)) {
+          const bv = p.branch_visibility.find((b: any) => b.branch_id === branchId);
+          if (bv !== undefined) {
+            return bv.visible_on_web;
+          }
+        }
+        return true;
+      });
+    }
+
     productsCache.set(cacheKey, { data: mapped, expiresAt: Date.now() + PRODUCTS_CACHE_TTL_MS });
     return mapped;
   },
@@ -140,12 +186,16 @@ export const productsService = {
   },
 
   async getById(id: string, branchId?: string): Promise<Product | null> {
-    const { data, error } = await supabase
+    let data: any = null;
+    let error: any = null;
+
+    const res = await supabase
       .from('products')
       .select(`
         id, name, description, category, price, original_price, mid_price,
         discount_percentage, markdown_percentage, image_url, images,
         is_new_in, web_only, visible_on_web, size_guide_id, created_at,
+        branch_visibility:product_branch_visibility(branch_id, visible_on_web),
         variants:product_variants(
           id, size, price_override,
           stock(quantity, branch_id)
@@ -156,17 +206,49 @@ export const productsService = {
           tag:product_tags(id, name, tag_group)
         )
       `)
-      // Nota: se piden columnas explícitas (no "select *") — evita mandar
-      // cost_price/base_price y otros campos internos a un cliente anónimo.
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error(`Error fetching product ${id}:`, error);
+    if (res.error) {
+      const fallback = await supabase
+        .from('products')
+        .select(`
+          id, name, description, category, price, original_price, mid_price,
+          discount_percentage, markdown_percentage, image_url, images,
+          is_new_in, web_only, visible_on_web, size_guide_id, created_at,
+          variants:product_variants(
+            id, size, price_override,
+            stock(quantity, branch_id)
+          ),
+          tags:product_tag_assignments(
+            id,
+            tag_id,
+            tag:product_tags(id, name, tag_group)
+          )
+        `)
+        .eq('id', id)
+        .single();
+      data = fallback.data;
+      error = fallback.error;
+    } else {
+      data = res.data;
+    }
+
+    if (error || !data) {
+      if (error && error.code !== 'PGRST116') {
+        console.error(`Error fetching product ${id}:`, error);
+      }
       return null;
     }
 
-    return data ? mapProduct(data, branchId) : null;
+    if (branchId && data.branch_visibility && Array.isArray(data.branch_visibility)) {
+      const bv = data.branch_visibility.find((b: any) => b.branch_id === branchId);
+      if (bv !== undefined && bv.visible_on_web === false) {
+        return null;
+      }
+    }
+
+    return mapProduct(data, branchId);
   },
 
   /**

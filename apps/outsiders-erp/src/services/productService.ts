@@ -593,4 +593,58 @@ export const productService = {
       throw error;
     }
   },
+
+  // ==================== VISIBILIDAD POR SUCURSAL ====================
+
+  /**
+   * Obtener visibilidad web por sucursal para un producto
+   */
+  async getBranchVisibilities(productId: string): Promise<Record<string, boolean>> {
+    try {
+      const { data, error } = await supabase
+        .from('product_branch_visibility')
+        .select('branch_id, visible_on_web')
+        .eq('product_id', productId);
+
+      if (error) {
+        return {};
+      }
+
+      const visibilities: Record<string, boolean> = {};
+      (data || []).forEach((row: any) => {
+        visibilities[row.branch_id] = row.visible_on_web;
+      });
+      return visibilities;
+    } catch (error) {
+      console.error('Error fetching product branch visibilities:', error);
+      return {};
+    }
+  },
+
+  /**
+   * Guardar visibilidad web por sucursal para un producto
+   */
+  async setBranchVisibilities(productId: string, visibilities: Record<string, boolean>) {
+    try {
+      const rows = Object.entries(visibilities).map(([branch_id, visible_on_web]) => ({
+        product_id: productId,
+        branch_id,
+        visible_on_web,
+        updated_at: new Date().toISOString(),
+      }));
+
+      if (rows.length === 0) return;
+
+      const { error } = await supabase
+        .from('product_branch_visibility')
+        .upsert(rows, { onConflict: 'product_id,branch_id' });
+
+      if (error) {
+        console.warn('Could not update product_branch_visibility:', error);
+      }
+    } catch (error) {
+      console.error('Error setting product branch visibilities:', error);
+    }
+  },
 };
+
