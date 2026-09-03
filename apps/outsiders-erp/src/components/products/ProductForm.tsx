@@ -1,8 +1,9 @@
 import { formatCurrency } from '../../lib/utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Image as ImageIcon, Trash2, Plus, Minus, Tag, Percent, Lock, Ruler, Globe, Store } from 'lucide-react';
-import { Product, ProductTag } from '../../lib/types';
+import { Product, ProductTag, Branch } from '../../lib/types';
 import { productService } from '../../services/productService';
+import { branchService } from '../../services/branchService';
 import { stockService } from '../../services/stockService';
 import { useAuthStore } from '../../store/authStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -96,6 +97,10 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
     (product as any)?.size_guide_id || ''
   );
 
+  // Branch visibilities state
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchVisibilities, setBranchVisibilities] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     // Load all size guides for the dropdown
     supabase
@@ -105,7 +110,33 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
       .then(({ data }) => {
         if (data) setSizeGuides(data as SizeGuideOption[]);
       });
-  }, []);
+
+    // Load branches and product branch visibilities
+    async function loadBranchesAndVisibilities() {
+      try {
+        const allBranches = await branchService.getBranches();
+        setBranches(allBranches);
+
+        let visibilities: Record<string, boolean> = {};
+        if (product?.id) {
+          visibilities = await productService.getBranchVisibilities(product.id);
+        }
+
+        const initialBranchVisibilities: Record<string, boolean> = {};
+        allBranches.forEach((b) => {
+          if (visibilities[b.id] !== undefined) {
+            initialBranchVisibilities[b.id] = visibilities[b.id] === true;
+          } else {
+            initialBranchVisibilities[b.id] = product?.visible_on_web ?? true;
+          }
+        });
+        setBranchVisibilities(initialBranchVisibilities);
+      } catch (err) {
+        console.error('Error loading branches and visibilities:', err);
+      }
+    }
+    loadBranchesAndVisibilities();
+  }, [product?.id]);
 
   // Computed: available sizes based on category
   const categorySizes = useMemo(() => {
@@ -449,7 +480,9 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         is_visible: true,
         is_new_in: formData.is_new_in,
         web_only: formData.web_only,
-        visible_on_web: formData.visible_on_web,
+        visible_on_web: Object.values(branchVisibilities).length > 0 
+          ? Object.values(branchVisibilities).some(v => v === true) 
+          : formData.visible_on_web,
         discount_percentage: formData.discount_percentage || null,
         markdown_percentage: formData.markdown_percentage || null,
         size_guide_id: selectedSizeGuideId || null,
@@ -463,6 +496,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         // Actualizar producto existente
         savedProduct = await productService.updateProduct(product.id, productData);
         
+        // Guardar visibilidad por sucursal
+        if (Object.keys(branchVisibilities).length > 0) {
+          await productService.setBranchVisibilities(savedProduct.id, branchVisibilities);
+        }
+
         // Gestionar variantes
         const existingVariants = await productService.getProductVariants(product.id);
         const existingSizes = existingVariants.map(v => v.size);
@@ -504,6 +542,11 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
         };
         savedProduct = await productService.createProduct(createData);
         
+        // Guardar visibilidad por sucursal
+        if (Object.keys(branchVisibilities).length > 0) {
+          await productService.setBranchVisibilities(savedProduct.id, branchVisibilities);
+        }
+
         // Crear variantes y stock
         for (const sizeData of sizesWithStock) {
           const newVariant = await productService.createProductVariant(savedProduct.id, sizeData.size, sizeData.priceOverride);
@@ -667,26 +710,70 @@ export function ProductForm({ product, onClose, onSuccess }: ProductFormProps) {
                   </span>
                 </label>
 
-                {/* VISIBLE ON WEB toggle: el producto NO aparece en el sitio web */}
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <div
-                    onClick={() => setFormData(prev => ({ ...prev, visible_on_web: !prev.visible_on_web }))}
-                    className={`relative w-10 h-6 rounded-full transition-colors mt-0.5 flex-shrink-0 ${formData.visible_on_web ? 'bg-black' : 'bg-orange-500'}`}
-                  >
-                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${formData.visible_on_web ? 'left-5' : 'left-1'}`} />
+                {/* VISIBILIDAD EN TIENDA ONLINE POR SUCURSAL */}
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 font-bold text-sm text-gray-900">
+                      <Store size={16} />
+                      Publicar en la tienda online por Sucursal
+                    </span>
                   </div>
-                  <span className="text-sm text-gray-700">
-                    <span className={`flex items-center gap-1.5 font-bold ${formData.visible_on_web ? 'text-black' : 'text-orange-700'}`}>
-                      <Store size={14} />
-                      Publicar en la tienda online
-                    </span>
-                    <span className="block mt-0.5 text-xs text-gray-500">
-                      {formData.visible_on_web
-                        ? 'Activado: aparece en el catálogo de la tienda online, en el buscador, y tiene su propia página con link para compartir. También se puede vender desde el local/POS.'
-                        : 'Desactivado: este producto NO se ve en la tienda online (no aparece en el catálogo, no sale en el buscador y no tiene página propia). Se sigue vendiendo sin problema desde el local/POS.'}
-                    </span>
-                  </span>
-                </label>
+                  <p className="text-xs text-gray-500">
+                    Configura de forma independiente en qué sucursal se mostrará este producto en la tienda virtual (ej: Santa Cruz vs. Cochabamba).
+                  </p>
+
+                  <div className="space-y-2">
+                    {branches.map((b) => {
+                      const isVisibleInBranch = branchVisibilities[b.id] ?? true;
+                      const isCurrentActiveBranch = b.id === activeBranch?.id;
+                      return (
+                        <div
+                          key={b.id}
+                          onClick={() => {
+                            setBranchVisibilities((prev) => ({
+                              ...prev,
+                              [b.id]: !isVisibleInBranch,
+                            }));
+                          }}
+                          className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors border border-gray-200 select-none"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Store size={16} className={isVisibleInBranch ? 'text-green-600' : 'text-gray-400'} />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900">
+                                  {b.name}
+                                </span>
+                                {isCurrentActiveBranch && (
+                                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full">
+                                    Sucursal actual
+                                  </span>
+                                )}
+                              </div>
+                              <span className="block text-xs text-gray-500 mt-0.5">
+                                {isVisibleInBranch
+                                  ? 'Visible en la tienda virtual de esta sucursal'
+                                  : 'Oculto en la tienda virtual de esta sucursal'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div
+                            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 cursor-pointer ${
+                              isVisibleInBranch ? 'bg-black' : 'bg-gray-300'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                                isVisibleInBranch ? 'left-6' : 'left-1'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* ===== SECCIÓN DE PRECIOS Y DESCUENTOS ===== */}
