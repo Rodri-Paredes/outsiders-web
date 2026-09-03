@@ -19,6 +19,7 @@ export const stockService = {
               name,
               category,
               price,
+              cost_price,
               image_url
             )
           )
@@ -190,6 +191,7 @@ export const stockService = {
               name,
               category,
               price,
+              cost_price,
               image_url
             )
           )

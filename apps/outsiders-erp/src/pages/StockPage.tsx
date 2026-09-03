@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, AlertTriangle, Package, SlidersHorizontal, ArrowLeftRight } from 'lucide-react';
+import { Search, AlertTriangle, Package, SlidersHorizontal, ArrowLeftRight, DollarSign } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 import { stockService } from '../services/stockService';
 import { useAuthStore } from '../store/authStore';
 import { CATEGORIES } from '../lib/constants';
@@ -93,6 +94,20 @@ export function StockPage() {
     );
   }, [filteredStock]);
 
+  // Valor total del inventario a precio de costo (SOLO ADMIN)
+  const totalStockValueCost = useMemo(() => {
+    if (!isAdmin) return 0;
+    return stock.reduce((sum, item) => {
+      const qty = item.quantity || 0;
+      const costPrice = item.variant?.product?.cost_price || 0;
+      return sum + qty * costPrice;
+    }, 0);
+  }, [stock, isAdmin]);
+
+  const totalStockUnits = useMemo(() => {
+    return stock.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  }, [stock]);
+
   const categoryOptions = [
     { value: '', label: 'Todas las categorías' },
     ...CATEGORIES.map((cat) => ({ value: cat, label: cat })),
@@ -126,6 +141,33 @@ export function StockPage() {
           </span>
         </div>
       </div>
+
+      {/* Tarjeta de Valor del Inventario a Precio de Costo - SOLO VISIBLE PARA ADMIN */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl p-5 shadow-sm border border-amber-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-lg text-white">
+              <DollarSign size={26} />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-amber-100 uppercase tracking-wider block">
+                Valor del Inventario en Stock (A Precio de Costo)
+              </span>
+              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                {formatCurrency(totalStockValueCost)}
+              </span>
+              <span className="text-xs text-amber-100/80 block mt-0.5">
+                🔒 Vista exclusiva de Administrador
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 bg-amber-700/40 px-3.5 py-2 rounded-lg text-xs font-medium text-amber-100 border border-amber-400/20">
+            <Package size={16} />
+            <span>{totalStockUnits} unidades totales en {activeBranch?.name || 'sucursal'}</span>
+          </div>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
